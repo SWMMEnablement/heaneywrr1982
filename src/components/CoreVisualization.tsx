@@ -1,8 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Triangle, Target, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface HoveredPoint {
+  type: 'scrb' | 'shapley' | 'centroid';
+  x: number;
+  y: number;
+}
 
 interface CoreVisualizationProps {
   participants: { id: number; name: string; independentCost: number }[];
@@ -19,6 +25,7 @@ const CoreVisualization = ({
   shapleyValues,
   grandCoalitionCost,
 }: CoreVisualizationProps) => {
+  const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
   // SVG dimensions
   const width = 400;
   const height = 360;
@@ -301,13 +308,17 @@ const CoreVisualization = ({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.6, type: "spring" }}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredPoint({ type: 'centroid', x: centroid.x, y: centroid.y })}
+              onMouseLeave={() => setHoveredPoint(null)}
             >
               <circle
                 cx={centroid.x}
                 cy={centroid.y}
-                r="4"
+                r={hoveredPoint?.type === 'centroid' ? 8 : 5}
                 fill="hsl(var(--muted-foreground))"
-                opacity="0.5"
+                opacity={hoveredPoint?.type === 'centroid' ? 0.8 : 0.5}
+                className="transition-all duration-200"
               />
             </motion.g>
 
@@ -316,21 +327,25 @@ const CoreVisualization = ({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.7, type: "spring" }}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredPoint({ type: 'scrb', x: scrbPoint.x, y: scrbPoint.y })}
+              onMouseLeave={() => setHoveredPoint(null)}
             >
               <circle
                 cx={scrbPoint.x}
                 cy={scrbPoint.y}
-                r="8"
+                r={hoveredPoint?.type === 'scrb' ? 10 : 8}
                 fill="hsl(var(--primary))"
                 stroke="white"
                 strokeWidth="2"
                 filter="url(#glow)"
+                className="transition-all duration-200"
               />
               <text
                 x={scrbPoint.x}
                 y={scrbPoint.y - 14}
                 textAnchor="middle"
-                className="text-xs font-medium fill-primary"
+                className="text-xs font-medium fill-primary pointer-events-none"
               >
                 SCRB
               </text>
@@ -341,21 +356,25 @@ const CoreVisualization = ({
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.8, type: "spring" }}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredPoint({ type: 'shapley', x: shapleyPoint.x, y: shapleyPoint.y })}
+              onMouseLeave={() => setHoveredPoint(null)}
             >
               <circle
                 cx={shapleyPoint.x}
                 cy={shapleyPoint.y}
-                r="8"
+                r={hoveredPoint?.type === 'shapley' ? 10 : 8}
                 fill="hsl(var(--interactive))"
                 stroke="white"
                 strokeWidth="2"
                 filter="url(#glow)"
+                className="transition-all duration-200"
               />
               <text
                 x={shapleyPoint.x}
                 y={shapleyPoint.y + 20}
                 textAnchor="middle"
-                className="text-xs font-medium fill-interactive"
+                className="text-xs font-medium fill-interactive pointer-events-none"
               >
                 Shapley
               </text>
@@ -365,6 +384,70 @@ const CoreVisualization = ({
             <g className="text-[10px] fill-muted-foreground font-mono">
               <text x={centerX} y={height - 8} textAnchor="middle">Cost share proportions</text>
             </g>
+
+            {/* Hover tooltip */}
+            {hoveredPoint && (
+              <g>
+                {/* Tooltip background */}
+                <rect
+                  x={Math.min(Math.max(hoveredPoint.x - 70, 10), width - 150)}
+                  y={hoveredPoint.y - 90}
+                  width="140"
+                  height={participants.length * 18 + 30}
+                  rx="6"
+                  fill="hsl(var(--card))"
+                  stroke="hsl(var(--border))"
+                  strokeWidth="1"
+                  filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
+                />
+                {/* Tooltip title */}
+                <text
+                  x={Math.min(Math.max(hoveredPoint.x, 80), width - 80)}
+                  y={hoveredPoint.y - 68}
+                  textAnchor="middle"
+                  className="text-xs font-semibold fill-foreground"
+                >
+                  {hoveredPoint.type === 'scrb' ? 'SCRB Allocation' : 
+                   hoveredPoint.type === 'shapley' ? 'Shapley Value' : 'Equal Split'}
+                </text>
+                {/* Divider line */}
+                <line
+                  x1={Math.min(Math.max(hoveredPoint.x - 60, 20), width - 140)}
+                  y1={hoveredPoint.y - 58}
+                  x2={Math.min(Math.max(hoveredPoint.x + 60, 140), width - 20)}
+                  y2={hoveredPoint.y - 58}
+                  stroke="hsl(var(--border))"
+                  strokeWidth="1"
+                />
+                {/* Allocation values */}
+                {participants.map((p, i) => {
+                  const values = hoveredPoint.type === 'scrb' ? scrbAllocations :
+                                 hoveredPoint.type === 'shapley' ? shapleyValues :
+                                 [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
+                  return (
+                    <text
+                      key={p.id}
+                      x={Math.min(Math.max(hoveredPoint.x - 55, 25), width - 135)}
+                      y={hoveredPoint.y - 42 + i * 18}
+                      className="text-[11px] fill-foreground font-mono"
+                    >
+                      {p.name.length > 10 ? p.name.slice(0, 10) + '…' : p.name}: {values[i].toFixed(2)}
+                    </text>
+                  );
+                })}
+                {/* Total */}
+                <text
+                  x={Math.min(Math.max(hoveredPoint.x - 55, 25), width - 135)}
+                  y={hoveredPoint.y - 42 + participants.length * 18}
+                  className="text-[11px] fill-muted-foreground font-mono"
+                >
+                  Total: {(hoveredPoint.type === 'scrb' ? scrbAllocations :
+                          hoveredPoint.type === 'shapley' ? shapleyValues :
+                          [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3])
+                          .reduce((a, b) => a + b, 0).toFixed(2)}
+                </text>
+              </g>
+            )}
           </svg>
         </div>
 
