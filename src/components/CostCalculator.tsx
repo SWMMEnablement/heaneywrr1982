@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
@@ -343,22 +344,36 @@ const CostCalculator = () => {
                       </TooltipContent>
                     </Tooltip>
                   </h4>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {participants.map(p => (
-                      <div key={p.id} className="flex items-center gap-3">
-                        <Input
-                          value={p.name}
-                          onChange={(e) => updateParticipant(p.id, 'name', e.target.value)}
-                          className="flex-1"
-                        />
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground">c({p.id}) =</span>
+                      <div key={p.id} className="space-y-2">
+                        <div className="flex items-center gap-3">
                           <Input
-                            type="number"
-                            value={p.independentCost}
-                            onChange={(e) => updateParticipant(p.id, 'independentCost', e.target.value)}
-                            className="w-20"
+                            value={p.name}
+                            onChange={(e) => updateParticipant(p.id, 'name', e.target.value)}
+                            className="flex-1"
                           />
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-muted-foreground">c({p.id}) =</span>
+                            <Input
+                              type="number"
+                              value={p.independentCost}
+                              onChange={(e) => updateParticipant(p.id, 'independentCost', e.target.value)}
+                              className="w-20"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 pl-2">
+                          <SlidersHorizontal className="w-3 h-3 text-muted-foreground shrink-0" />
+                          <Slider
+                            value={[p.independentCost]}
+                            onValueChange={(value) => updateParticipant(p.id, 'independentCost', value[0])}
+                            min={0}
+                            max={20}
+                            step={0.5}
+                            className="flex-1"
+                          />
+                          <span className="text-xs text-muted-foreground w-8 text-right">{p.independentCost}</span>
                         </div>
                       </div>
                     ))}
