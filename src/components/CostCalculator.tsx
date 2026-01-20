@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import CoreVisualization from "./CoreVisualization";
 import CompareChart from "./CompareChart";
+import OnboardingTour from "./OnboardingTour";
+import ExampleBank, { Scenario } from "./ExampleBank";
 interface Participant {
   id: number;
   name: string;
@@ -36,6 +38,26 @@ const CostCalculator = () => {
   const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie' | 'radar' | 'compare'>('grouped');
   const [compareMethod1, setCompareMethod1] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('scrb');
   const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
+  const [showTour, setShowTour] = useState(false);
+  const [showExamples, setShowExamples] = useState(false);
+
+  // Check if first visit to show tour
+  useEffect(() => {
+    const hasSeenTour = localStorage.getItem('hasSeenCostCalculatorTour');
+    if (!hasSeenTour) {
+      setShowTour(true);
+    }
+  }, []);
+
+  const handleTourComplete = () => {
+    localStorage.setItem('hasSeenCostCalculatorTour', 'true');
+  };
+
+  const handleSelectScenario = (scenario: Scenario) => {
+    setParticipants(scenario.participants);
+    setCoalitions(scenario.coalitions);
+    setShowExamples(false);
+  };
 
   const updateParticipant = (id: number, field: keyof Participant, value: string | number) => {
     setParticipants(prev => 
@@ -217,6 +239,12 @@ const CostCalculator = () => {
 
   return (
     <section id="calculator" className="py-20 px-6">
+      <OnboardingTour 
+        open={showTour} 
+        onOpenChange={setShowTour} 
+        onComplete={handleTourComplete}
+      />
+      
       <div className="container max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -232,11 +260,50 @@ const CostCalculator = () => {
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-primary mb-4">
             Cost Allocation Calculator
           </h2>
-          <p className="text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
             Experiment with different cost scenarios and see how various game theory methods 
             allocate costs among participants in a cooperative project.
           </p>
+          <div className="flex items-center justify-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowTour(true)}
+              className="gap-2"
+            >
+              <HelpCircle className="w-4 h-4" />
+              Take a Tour
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setShowExamples(!showExamples)}
+              className="gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              {showExamples ? 'Hide Examples' : 'Example Scenarios'}
+            </Button>
+          </div>
         </motion.div>
+
+        {/* Example Bank Panel */}
+        <AnimatePresence>
+          {showExamples && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mb-8 overflow-hidden"
+            >
+              <Card className="card-elevated">
+                <CardContent className="p-6">
+                  <ExampleBank onSelectScenario={handleSelectScenario} />
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Input Panel */}
