@@ -1,16 +1,20 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal, Users2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
+import { Badge } from "@/components/ui/badge";
 import CoreVisualization from "./CoreVisualization";
 import CompareChart from "./CompareChart";
 import OnboardingTour from "./OnboardingTour";
 import ExampleBank, { Scenario } from "./ExampleBank";
+import ParallelCoordinatesChart from "./ParallelCoordinatesChart";
+import TetrahedronVisualization from "./TetrahedronVisualization";
+
 interface Participant {
   id: number;
   name: string;
@@ -23,6 +27,7 @@ interface CoalitionCost {
 }
 
 const CostCalculator = () => {
+  const [playerMode, setPlayerMode] = useState<3 | 4>(3);
   const [participants, setParticipants] = useState<Participant[]>([
     { id: 1, name: "Participant 1", independentCost: 2 },
     { id: 2, name: "Participant 2", independentCost: 4 },
@@ -41,6 +46,44 @@ const CostCalculator = () => {
   const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
   const [showTour, setShowTour] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
+
+  // Switch player mode
+  const switchPlayerMode = (mode: 3 | 4) => {
+    setPlayerMode(mode);
+    if (mode === 3) {
+      setParticipants([
+        { id: 1, name: "Participant 1", independentCost: 2 },
+        { id: 2, name: "Participant 2", independentCost: 4 },
+        { id: 3, name: "Participant 3", independentCost: 6 },
+      ]);
+      setCoalitions([
+        { participants: [1, 2], cost: 5 },
+        { participants: [1, 3], cost: 6 },
+        { participants: [2, 3], cost: 6 },
+        { participants: [1, 2, 3], cost: 7 },
+      ]);
+    } else {
+      setParticipants([
+        { id: 1, name: "Participant 1", independentCost: 15 },
+        { id: 2, name: "Participant 2", independentCost: 25 },
+        { id: 3, name: "Participant 3", independentCost: 20 },
+        { id: 4, name: "Participant 4", independentCost: 18 },
+      ]);
+      setCoalitions([
+        { participants: [1, 2], cost: 32 },
+        { participants: [1, 3], cost: 28 },
+        { participants: [1, 4], cost: 26 },
+        { participants: [2, 3], cost: 36 },
+        { participants: [2, 4], cost: 34 },
+        { participants: [3, 4], cost: 30 },
+        { participants: [1, 2, 3], cost: 42 },
+        { participants: [1, 2, 4], cost: 40 },
+        { participants: [1, 3, 4], cost: 38 },
+        { participants: [2, 3, 4], cost: 45 },
+        { participants: [1, 2, 3, 4], cost: 50 },
+      ]);
+    }
+  };
 
   // Check if first visit to show tour
   useEffect(() => {
@@ -265,7 +308,28 @@ const CostCalculator = () => {
             Experiment with different cost scenarios and see how various game theory methods 
             allocate costs among participants in a cooperative project.
           </p>
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <div className="flex gap-1 p-1 bg-muted rounded-lg">
+              <Button
+                variant={playerMode === 3 ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => switchPlayerMode(3)}
+                className="gap-1"
+              >
+                <Users className="w-4 h-4" />
+                3 Players
+              </Button>
+              <Button
+                variant={playerMode === 4 ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => switchPlayerMode(4)}
+                className="gap-1"
+              >
+                <Users2 className="w-4 h-4" />
+                4 Players
+                <Badge variant="outline" className="ml-1 text-[10px] px-1">New</Badge>
+              </Button>
+            </div>
             <Button 
               variant="outline" 
               size="sm" 
@@ -299,7 +363,7 @@ const CostCalculator = () => {
             >
               <Card className="card-elevated">
                 <CardContent className="p-6">
-                  <ExampleBank onSelectScenario={handleSelectScenario} />
+                  <ExampleBank onSelectScenario={handleSelectScenario} playerMode={playerMode} />
                 </CardContent>
               </Card>
             </motion.div>
