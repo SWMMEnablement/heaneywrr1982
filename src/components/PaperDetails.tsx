@@ -1,27 +1,40 @@
 import { motion } from "framer-motion";
 import { BookOpen, Users, Target, Lightbulb, Quote, ArrowRight, FileText, ExternalLink, GraduationCap, Library, Landmark, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlossaryTermLink } from "./Glossary";
 
 const PaperDetails = () => {
   const sections = [
     {
       icon: <Target className="w-6 h-6" />,
       title: "Research Objective",
-      content: "This paper addresses the challenge of fairly apportioning costs among participants in water resource projects. The authors compare ad hoc methods used in water resources with rigorous fairness axioms from cooperative game theory.",
+      content: (
+        <>
+          This paper addresses the challenge of fairly apportioning costs among participants in water resource projects. The authors compare ad hoc methods used in water resources with rigorous fairness axioms from cooperative game theory.
+        </>
+      ),
       color: "from-primary/10 to-primary/5",
       iconBg: "bg-primary/10 text-primary",
     },
     {
       icon: <Users className="w-6 h-6" />,
       title: "Key Contributors",
-      content: "James P. Heaney and Robert E. Dickinson from the University of Florida developed this framework, building upon 50 years of cost allocation practices and game theory developments by Shapley, Raiffa, and others.",
+      content: (
+        <>
+          James P. Heaney and Robert E. Dickinson from the University of Florida developed this framework, building upon 50 years of cost allocation practices and game theory developments by <GlossaryTermLink term="Shapley Value">Shapley</GlossaryTermLink>, Raiffa, and others.
+        </>
+      ),
       color: "from-interactive/10 to-interactive/5",
       iconBg: "bg-interactive/10 text-interactive",
     },
     {
       icon: <Lightbulb className="w-6 h-6" />,
       title: "Main Contribution",
-      content: "The MCRS (Minimum Costs, Remaining Savings) method is proposed as an improvement over the SCRB method. It uses the actual core boundaries rather than potentially infeasible nominal bounds.",
+      content: (
+        <>
+          The <GlossaryTermLink term="MCRS Method">MCRS (Minimum Costs, Remaining Savings)</GlossaryTermLink> method is proposed as an improvement over the <GlossaryTermLink term="SCRB Method">SCRB method</GlossaryTermLink>. It uses the actual <GlossaryTermLink term="The Core">core</GlossaryTermLink> boundaries rather than potentially infeasible nominal bounds.
+        </>
+      ),
       color: "from-accent/10 to-accent/5",
       iconBg: "bg-accent/10 text-accent",
     },
@@ -30,19 +43,35 @@ const PaperDetails = () => {
   const keyFindings = [
     {
       title: "Fairness Criteria",
-      description: "Three fundamental axioms for fair cost allocation: individual rationality (pay no more than standalone cost), budget balance (total costs recovered), and coalition rationality (core stability).",
+      content: (
+        <>
+          Three fundamental axioms for fair cost allocation: <GlossaryTermLink term="Individual Rationality">individual rationality</GlossaryTermLink> (pay no more than standalone cost), budget balance (total costs recovered), and <GlossaryTermLink term="Coalition Rationality">coalition rationality</GlossaryTermLink> (core stability).
+        </>
+      ),
     },
     {
       title: "Characteristic Functions",
-      description: "Cost games are defined by characteristic functions c(S) that specify the cost for each possible coalition S. These must satisfy subadditivity for cooperation to be beneficial.",
+      content: (
+        <>
+          Cost games are defined by <GlossaryTermLink term="Characteristic Function">characteristic functions</GlossaryTermLink> c(S) that specify the cost for each possible <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink> S. These must satisfy <GlossaryTermLink term="Subadditive">subadditivity</GlossaryTermLink> for cooperation to be beneficial.
+        </>
+      ),
     },
     {
       title: "Core Concept",
-      description: "The core represents all stable allocations where no group would be better off leaving the coalition. The goal is to find a solution in the center of the core.",
+      content: (
+        <>
+          <GlossaryTermLink term="The Core">The core</GlossaryTermLink> represents all stable allocations where no group would prefer to break away and form their own coalition. The goal is to find a solution in the center of the core.
+        </>
+      ),
     },
     {
       title: "SCRB Limitations",
-      description: "The traditional Separable Costs, Remaining Benefits method may produce allocations outside the core, especially for three or more participants.",
+      content: (
+        <>
+          The traditional <GlossaryTermLink term="SCRB Method">Separable Costs, Remaining Benefits</GlossaryTermLink> method may produce allocations outside <GlossaryTermLink term="The Core">the core</GlossaryTermLink>, especially for three or more participants.
+        </>
+      ),
     },
   ];
 
@@ -224,9 +253,9 @@ const PaperDetails = () => {
                       </div>
                       <div>
                         <h4 className="font-semibold text-primary mb-2">{finding.title}</h4>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {finding.description}
-                        </p>
+                        <div className="text-sm text-muted-foreground leading-relaxed">
+                          {finding.content}
+                        </div>
                       </div>
                     </div>
                   </CardContent>
