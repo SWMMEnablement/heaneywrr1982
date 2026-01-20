@@ -127,6 +127,18 @@ const PaperDetails = () => {
                       <p className="font-medium">1982</p>
                     </div>
                   </div>
+                  <div className="mt-4 pt-4 border-t border-border/50">
+                    <a 
+                      href="https://scholar.google.com/scholar?cites=PAPER_ID" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-interactive/10 text-interactive text-sm font-medium hover:bg-interactive/20 transition-colors"
+                    >
+                      <GraduationCap className="w-4 h-4" />
+                      106 Citations on Google Scholar
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  </div>
                 </div>
               </div>
             </CardContent>
