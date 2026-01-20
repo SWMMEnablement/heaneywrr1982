@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3 } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,8 @@ const CostCalculator = () => {
     { participants: [2, 3], cost: 6 },
     { participants: [1, 2, 3], cost: 7 },
   ]);
+
+  const [chartMode, setChartMode] = useState<'grouped' | 'stacked'>('grouped');
 
   const updateParticipant = (id: number, field: keyof Participant, value: string | number) => {
     setParticipants(prev => 
@@ -485,88 +487,179 @@ const CostCalculator = () => {
           className="mt-8"
         >
           <Card className="card-elevated">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-serif">
-                <BarChart3 className="w-5 h-5 text-interactive" />
-                Allocation Comparison Chart
-              </CardTitle>
-              <CardDescription>
-                Visual comparison of cost allocations across all methods
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 font-serif">
+                  <BarChart3 className="w-5 h-5 text-interactive" />
+                  Allocation Comparison Chart
+                </CardTitle>
+                <CardDescription>
+                  Visual comparison of cost allocations across all methods
+                </CardDescription>
+              </div>
+              <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                <Button
+                  variant={chartMode === 'grouped' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartMode('grouped')}
+                  className="h-8 px-3 text-xs"
+                >
+                  <LayoutGrid className="w-3 h-3 mr-1" />
+                  Grouped
+                </Button>
+                <Button
+                  variant={chartMode === 'stacked' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartMode('stacked')}
+                  className="h-8 px-3 text-xs"
+                >
+                  <Layers className="w-3 h-3 mr-1" />
+                  Stacked
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={participants.map((p, i) => ({
-                      name: p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name,
-                      SCRB: Number(calculations.scrbAllocations[i].toFixed(2)),
-                      Shapley: Number(calculations.shapleyValues[i].toFixed(2)),
-                      Nucleolus: Number(calculations.nucleolusValues[i].toFixed(2)),
-                      'Equal Split': Number(calculations.equalSplit[i].toFixed(2)),
-                    }))}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    barCategoryGap="20%"
-                  >
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                    />
-                    <YAxis 
-                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                      tickLine={{ stroke: 'hsl(var(--border))' }}
-                      label={{ 
-                        value: 'Cost Allocation', 
-                        angle: -90, 
-                        position: 'insideLeft',
-                        style: { fill: 'hsl(var(--muted-foreground))', fontSize: 12 }
-                      }}
-                    />
-                    <RechartsTooltip
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--card))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '8px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      }}
-                      labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: 4 }}
-                      itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}
-                    />
-                    <Legend 
-                      wrapperStyle={{ paddingTop: 20 }}
-                      iconType="circle"
-                      iconSize={8}
-                    />
-                    <Bar 
-                      dataKey="SCRB" 
-                      fill="hsl(var(--primary))" 
-                      radius={[4, 4, 0, 0]}
-                      animationDuration={800}
-                    />
-                    <Bar 
-                      dataKey="Shapley" 
-                      fill="hsl(var(--interactive))" 
-                      radius={[4, 4, 0, 0]}
-                      animationDuration={800}
-                    />
-                    <Bar 
-                      dataKey="Nucleolus" 
-                      fill="hsl(var(--accent))" 
-                      radius={[4, 4, 0, 0]}
-                      animationDuration={800}
-                    />
-                    <Bar 
-                      dataKey="Equal Split" 
-                      fill="hsl(var(--muted-foreground))" 
-                      opacity={0.5}
-                      radius={[4, 4, 0, 0]}
-                      animationDuration={800}
-                    />
-                  </BarChart>
+                  {chartMode === 'grouped' ? (
+                    <BarChart
+                      data={participants.map((p, i) => ({
+                        name: p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name,
+                        SCRB: Number(calculations.scrbAllocations[i].toFixed(2)),
+                        Shapley: Number(calculations.shapleyValues[i].toFixed(2)),
+                        Nucleolus: Number(calculations.nucleolusValues[i].toFixed(2)),
+                        'Equal Split': Number(calculations.equalSplit[i].toFixed(2)),
+                      }))}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      barCategoryGap="20%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                        tickLine={{ stroke: 'hsl(var(--border))' }}
+                      />
+                      <YAxis 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                        tickLine={{ stroke: 'hsl(var(--border))' }}
+                        label={{ 
+                          value: 'Cost Allocation', 
+                          angle: -90, 
+                          position: 'insideLeft',
+                          style: { fill: 'hsl(var(--muted-foreground))', fontSize: 12 }
+                        }}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: 4 }}
+                        itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: 20 }}
+                        iconType="circle"
+                        iconSize={8}
+                      />
+                      <Bar 
+                        dataKey="SCRB" 
+                        fill="hsl(var(--primary))" 
+                        radius={[4, 4, 0, 0]}
+                        animationDuration={800}
+                      />
+                      <Bar 
+                        dataKey="Shapley" 
+                        fill="hsl(var(--interactive))" 
+                        radius={[4, 4, 0, 0]}
+                        animationDuration={800}
+                      />
+                      <Bar 
+                        dataKey="Nucleolus" 
+                        fill="hsl(var(--accent))" 
+                        radius={[4, 4, 0, 0]}
+                        animationDuration={800}
+                      />
+                      <Bar 
+                        dataKey="Equal Split" 
+                        fill="hsl(var(--muted-foreground))" 
+                        opacity={0.5}
+                        radius={[4, 4, 0, 0]}
+                        animationDuration={800}
+                      />
+                    </BarChart>
+                  ) : (
+                    <BarChart
+                      data={[
+                        {
+                          name: 'SCRB',
+                          ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.scrbAllocations[i]])),
+                        },
+                        {
+                          name: 'Shapley',
+                          ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.shapleyValues[i]])),
+                        },
+                        {
+                          name: 'Nucleolus',
+                          ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.nucleolusValues[i]])),
+                        },
+                        {
+                          name: 'Equal Split',
+                          ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.equalSplit[i]])),
+                        },
+                      ]}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                      barCategoryGap="25%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                        tickLine={{ stroke: 'hsl(var(--border))' }}
+                      />
+                      <YAxis 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                        tickLine={{ stroke: 'hsl(var(--border))' }}
+                        label={{ 
+                          value: 'Total Cost', 
+                          angle: -90, 
+                          position: 'insideLeft',
+                          style: { fill: 'hsl(var(--muted-foreground))', fontSize: 12 }
+                        }}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        }}
+                        labelStyle={{ color: 'hsl(var(--foreground))', fontWeight: 600, marginBottom: 4 }}
+                        itemStyle={{ color: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                        formatter={(value: number) => value.toFixed(2)}
+                      />
+                      <Legend 
+                        wrapperStyle={{ paddingTop: 20 }}
+                        iconType="circle"
+                        iconSize={8}
+                      />
+                      {participants.map((p, i) => (
+                        <Bar 
+                          key={p.id}
+                          dataKey={p.name} 
+                          stackId="a"
+                          fill={`hsl(var(--chart-${(i % 5) + 1}))`}
+                          animationDuration={800}
+                        />
+                      ))}
+                    </BarChart>
+                  )}
                 </ResponsiveContainer>
               </div>
             </CardContent>
