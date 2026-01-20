@@ -104,6 +104,92 @@ const CostCalculator = () => {
       return value;
     });
 
+    // Nucleolus calculation (for 3 players)
+    const nucleolusValues = (() => {
+      if (n !== 3) return [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
+
+      const c1 = participants[0].independentCost;
+      const c2 = participants[1].independentCost;
+      const c3 = participants[2].independentCost;
+      const C = grandCoalitionCost;
+
+      const c12 = coalitions.find(c => 
+        c.participants.length === 2 && 
+        c.participants.includes(1) && 
+        c.participants.includes(2)
+      )?.cost ?? c1 + c2;
+      
+      const c13 = coalitions.find(c => 
+        c.participants.length === 2 && 
+        c.participants.includes(1) && 
+        c.participants.includes(3)
+      )?.cost ?? c1 + c3;
+      
+      const c23 = coalitions.find(c => 
+        c.participants.length === 2 && 
+        c.participants.includes(2) && 
+        c.participants.includes(3)
+      )?.cost ?? c2 + c3;
+
+      // Iterative approach to find nucleolus
+      let x1 = C / 3;
+      let x2 = C / 3;
+      let x3 = C / 3;
+
+      const iterations = 100;
+      const step = 0.01;
+
+      for (let iter = 0; iter < iterations; iter++) {
+        const excesses = [
+          { type: 'x1', value: c1 - x1 },
+          { type: 'x2', value: c2 - x2 },
+          { type: 'x3', value: c3 - x3 },
+          { type: 'x12', value: c12 - x1 - x2 },
+          { type: 'x13', value: c13 - x1 - x3 },
+          { type: 'x23', value: c23 - x2 - x3 },
+        ];
+
+        const minExcess = Math.min(...excesses.map(e => e.value));
+        const tightConstraints = excesses.filter(e => Math.abs(e.value - minExcess) < step * 2);
+
+        let dx1 = 0, dx2 = 0, dx3 = 0;
+        
+        for (const tc of tightConstraints) {
+          switch (tc.type) {
+            case 'x1': dx1 -= step; break;
+            case 'x2': dx2 -= step; break;
+            case 'x3': dx3 -= step; break;
+            case 'x12': dx1 -= step / 2; dx2 -= step / 2; break;
+            case 'x13': dx1 -= step / 2; dx3 -= step / 2; break;
+            case 'x23': dx2 -= step / 2; dx3 -= step / 2; break;
+          }
+        }
+
+        const total = dx1 + dx2 + dx3;
+        dx1 -= total / 3;
+        dx2 -= total / 3;
+        dx3 -= total / 3;
+
+        x1 += dx1;
+        x2 += dx2;
+        x3 += dx3;
+
+        const sum = x1 + x2 + x3;
+        x1 = x1 * C / sum;
+        x2 = x2 * C / sum;
+        x3 = x3 * C / sum;
+
+        x1 = Math.max(0, x1);
+        x2 = Math.max(0, x2);
+        x3 = Math.max(0, x3);
+      }
+
+      return [x1, x2, x3];
+    })();
+
+    // Equal split
+    const equalSplit = participants.map(() => grandCoalitionCost / n);
+
     // Total savings
     const totalIndependentCost = participants.reduce((sum, p) => sum + p.independentCost, 0);
     const savings = totalIndependentCost - grandCoalitionCost;
@@ -114,6 +200,8 @@ const CostCalculator = () => {
       nonseparableCost,
       scrbAllocations,
       shapleyValues,
+      nucleolusValues,
+      equalSplit,
       grandCoalitionCost,
       totalIndependentCost,
       savings,
@@ -251,7 +339,7 @@ const CostCalculator = () => {
                   Cost Allocations
                 </CardTitle>
                 <CardDescription>
-                  Comparing SCRB method with Shapley values
+                  Comparing all four allocation methods side by side
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -273,15 +361,36 @@ const CostCalculator = () => {
                   </div>
                 </div>
 
-                {/* Allocation Table */}
+                {/* Allocation Comparison Table */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b">
                         <th className="py-3 px-2 text-left font-medium">Participant</th>
-                        <th className="py-3 px-2 text-right font-medium">Separable</th>
-                        <th className="py-3 px-2 text-right font-medium">SCRB</th>
-                        <th className="py-3 px-2 text-right font-medium">Shapley</th>
+                        <th className="py-3 px-2 text-right font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-primary" />
+                            SCRB
+                          </span>
+                        </th>
+                        <th className="py-3 px-2 text-right font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-interactive" />
+                            Shapley
+                          </span>
+                        </th>
+                        <th className="py-3 px-2 text-right font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-accent" />
+                            Nucleolus
+                          </span>
+                        </th>
+                        <th className="py-3 px-2 text-right font-medium">
+                          <span className="inline-flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-muted-foreground/50" />
+                            Equal
+                          </span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -296,47 +405,69 @@ const CostCalculator = () => {
                             className="border-b border-muted"
                           >
                             <td className="py-3 px-2 font-medium">{p.name}</td>
-                            <td className="py-3 px-2 text-right font-mono text-muted-foreground">
-                              {calculations.separableCosts[i].toFixed(2)}
-                            </td>
                             <td className="py-3 px-2 text-right font-mono font-medium text-primary">
                               {calculations.scrbAllocations[i].toFixed(2)}
                             </td>
                             <td className="py-3 px-2 text-right font-mono font-medium text-interactive">
                               {calculations.shapleyValues[i].toFixed(2)}
                             </td>
+                            <td className="py-3 px-2 text-right font-mono font-medium text-accent">
+                              {calculations.nucleolusValues[i].toFixed(2)}
+                            </td>
+                            <td className="py-3 px-2 text-right font-mono text-muted-foreground">
+                              {calculations.equalSplit[i].toFixed(2)}
+                            </td>
                           </motion.tr>
                         ))}
                       </AnimatePresence>
-                      <tr className="font-bold">
+                      <tr className="font-bold bg-muted/30">
                         <td className="py-3 px-2">Total</td>
-                        <td className="py-3 px-2 text-right font-mono">
-                          {calculations.separableCosts.reduce((a, b) => a + b, 0).toFixed(2)}
-                        </td>
                         <td className="py-3 px-2 text-right font-mono text-primary">
                           {calculations.scrbAllocations.reduce((a, b) => a + b, 0).toFixed(2)}
                         </td>
                         <td className="py-3 px-2 text-right font-mono text-interactive">
                           {calculations.shapleyValues.reduce((a, b) => a + b, 0).toFixed(2)}
                         </td>
+                        <td className="py-3 px-2 text-right font-mono text-accent">
+                          {calculations.nucleolusValues.reduce((a, b) => a + b, 0).toFixed(2)}
+                        </td>
+                        <td className="py-3 px-2 text-right font-mono text-muted-foreground">
+                          {calculations.equalSplit.reduce((a, b) => a + b, 0).toFixed(2)}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                {/* Legend */}
-                <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-muted-foreground/50" />
-                    <span>Separable = direct incremental cost</span>
+                {/* Method Descriptions */}
+                <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/5">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1 shrink-0" />
+                    <div>
+                      <span className="font-medium text-primary">SCRB</span>
+                      <p>Separable costs + proportional remaining benefits share</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-primary" />
-                    <span>SCRB = Separable + prorated share</span>
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-interactive/5">
+                    <div className="w-2 h-2 rounded-full bg-interactive mt-1 shrink-0" />
+                    <div>
+                      <span className="font-medium text-interactive">Shapley</span>
+                      <p>Average marginal contribution across all orderings</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-interactive" />
-                    <span>Shapley = marginal contribution average</span>
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-accent/5">
+                    <div className="w-2 h-2 rounded-full bg-accent mt-1 shrink-0" />
+                    <div>
+                      <span className="font-medium text-accent">Nucleolus</span>
+                      <p>Minimizes maximum coalition dissatisfaction</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground/50 mt-1 shrink-0" />
+                    <div>
+                      <span className="font-medium text-muted-foreground">Equal Split</span>
+                      <p>Simple equal division of total cost</p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
