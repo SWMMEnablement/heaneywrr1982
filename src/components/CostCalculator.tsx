@@ -14,6 +14,7 @@ import OnboardingTour from "./OnboardingTour";
 import ExampleBank, { Scenario } from "./ExampleBank";
 import ParallelCoordinatesChart from "./ParallelCoordinatesChart";
 import TetrahedronVisualization from "./TetrahedronVisualization";
+import ActiveLearningChallenges from "./ActiveLearningChallenges";
 
 interface Participant {
   id: number;
@@ -978,6 +979,25 @@ const CostCalculator = () => {
             grandCoalitionCost={calculations.grandCoalitionCost}
           />
         </motion.div>
+
+        {/* Active Learning Challenges */}
+        {playerMode === 3 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="mt-8"
+          >
+            <ActiveLearningChallenges
+              scrbAllocations={calculations.scrbAllocations}
+              shapleyValues={calculations.shapleyValues}
+              nucleolusValues={calculations.nucleolusValues}
+              participantNames={participants.map(p => p.name)}
+              grandCoalitionCost={calculations.grandCoalitionCost}
+            />
+          </motion.div>
+        )}
       </div>
     </section>
   );
