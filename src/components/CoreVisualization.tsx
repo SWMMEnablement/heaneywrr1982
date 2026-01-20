@@ -1,14 +1,22 @@
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { Triangle, Target, Info, Eye, EyeOff } from "lucide-react";
+import { useMemo, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Triangle, Target, Info, Eye, EyeOff, Move, MousePointer } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 
 interface HoveredPoint {
-  type: 'scrb' | 'shapley' | 'centroid' | 'nucleolus';
+  type: 'scrb' | 'shapley' | 'centroid' | 'nucleolus' | 'custom';
   x: number;
   y: number;
+  values?: number[];
+}
+
+interface ClickedConstraint {
+  label: string;
+  description: string;
+  type: 'individual' | 'coalition';
+  color: string;
 }
 
 interface CoreVisualizationProps {
@@ -27,6 +35,18 @@ const CoreVisualization = ({
   grandCoalitionCost,
 }: CoreVisualizationProps) => {
   const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
+  const [clickedConstraint, setClickedConstraint] = useState<ClickedConstraint | null>(null);
+  const [draggingPoint, setDraggingPoint] = useState<'scrb' | 'shapley' | 'nucleolus' | null>(null);
+  const [dragOffsets, setDragOffsets] = useState<{
+    scrb: { x: number; y: number };
+    shapley: { x: number; y: number };
+    nucleolus: { x: number; y: number };
+  }>({
+    scrb: { x: 0, y: 0 },
+    shapley: { x: 0, y: 0 },
+    nucleolus: { x: 0, y: 0 },
+  });
+  
   // SVG dimensions
   const width = 400;
   const height = 360;
@@ -44,20 +64,30 @@ const CoreVisualization = ({
   };
 
   // Convert barycentric coordinates to Cartesian
-  const barycentricToCartesian = (coords: number[]) => {
+  const barycentricToCartesian = useCallback((coords: number[]) => {
     const [a, b, c] = coords;
     return {
       x: a * vertices.A.x + b * vertices.B.x + c * vertices.C.x,
       y: a * vertices.A.y + b * vertices.B.y + c * vertices.C.y,
     };
-  };
+  }, [vertices]);
+
+  // Convert Cartesian to barycentric
+  const cartesianToBarycentric = useCallback((x: number, y: number) => {
+    const { A, B, C } = vertices;
+    const det = (B.y - C.y) * (A.x - C.x) + (C.x - B.x) * (A.y - C.y);
+    const a = ((B.y - C.y) * (x - C.x) + (C.x - B.x) * (y - C.y)) / det;
+    const b = ((C.y - A.y) * (x - C.x) + (A.x - C.x) * (y - C.y)) / det;
+    const c = 1 - a - b;
+    return [Math.max(0, Math.min(1, a)), Math.max(0, Math.min(1, b)), Math.max(0, Math.min(1, c))];
+  }, [vertices]);
 
   // Normalize allocations to barycentric coordinates
-  const allocationToBarycentric = (allocation: number[]) => {
+  const allocationToBarycentric = useCallback((allocation: number[]) => {
     const total = allocation.reduce((sum, v) => sum + v, 0);
     if (total === 0) return [1/3, 1/3, 1/3];
     return allocation.map(v => v / total);
-  };
+  }, []);
 
   // Calculate core constraints
   const coreConstraints = useMemo(() => {
@@ -88,14 +118,7 @@ const CoreVisualization = ({
 
     const C = grandCoalitionCost;
 
-    // Core constraints for a 3-player cost game:
-    // x1 <= c1, x2 <= c2, x3 <= c3 (individual rationality)
-    // x1 + x2 <= c12, x1 + x3 <= c13, x2 + x3 <= c23 (coalition rationality)
-    // x1 + x2 + x3 = C (efficiency)
-
-    // Define constraint half-planes in the simplex
-    // We'll compute the core polygon by intersecting these constraints
-    
+    // Core constraints for a 3-player cost game
     const constraints = [
       { type: 'individual', player: 1, bound: c1 },
       { type: 'individual', player: 2, bound: c2 },
@@ -106,7 +129,6 @@ const CoreVisualization = ({
     ];
 
     // Generate core polygon vertices using constraint intersection
-    // For visualization, we'll sample the feasible region
     const coreVertices: number[][] = [];
     const step = 0.02;
     
@@ -170,23 +192,62 @@ const CoreVisualization = ({
       isFeasible: hull.length >= 3,
       constraints,
     };
-  }, [participants, coalitions, grandCoalitionCost]);
+  }, [participants, coalitions, grandCoalitionCost, allocationToBarycentric, barycentricToCartesian]);
+
+  // Check if a point is in the core
+  const isPointInCore = useCallback((x: number, y: number, C: number) => {
+    const c1 = participants[0]?.independentCost ?? 0;
+    const c2 = participants[1]?.independentCost ?? 0;
+    const c3 = participants[2]?.independentCost ?? 0;
+    
+    const c12 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(1) && 
+      c.participants.includes(2)
+    )?.cost ?? c1 + c2;
+    
+    const c13 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(1) && 
+      c.participants.includes(3)
+    )?.cost ?? c1 + c3;
+    
+    const c23 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(2) && 
+      c.participants.includes(3)
+    )?.cost ?? c2 + c3;
+
+    const bary = cartesianToBarycentric(x, y);
+    const x1 = bary[0] * C;
+    const x2 = bary[1] * C;
+    const x3 = bary[2] * C;
+
+    return (
+      x1 <= c1 + 0.01 &&
+      x2 <= c2 + 0.01 &&
+      x3 <= c3 + 0.01 &&
+      x1 + x2 <= c12 + 0.01 &&
+      x1 + x3 <= c13 + 0.01 &&
+      x2 + x3 <= c23 + 0.01
+    );
+  }, [participants, coalitions, cartesianToBarycentric]);
 
   // Calculate positions for allocation methods
   const scrbPoint = useMemo(() => {
     const bary = allocationToBarycentric(scrbAllocations);
     return barycentricToCartesian(bary);
-  }, [scrbAllocations]);
+  }, [scrbAllocations, allocationToBarycentric, barycentricToCartesian]);
 
   const shapleyPoint = useMemo(() => {
     const bary = allocationToBarycentric(shapleyValues);
     return barycentricToCartesian(bary);
-  }, [shapleyValues]);
+  }, [shapleyValues, allocationToBarycentric, barycentricToCartesian]);
 
   // Equal split point (centroid)
   const centroid = barycentricToCartesian([1/3, 1/3, 1/3]);
 
-  // Calculate Nucleolus - minimizes the maximum excess of any coalition
+  // Calculate Nucleolus
   const nucleolusValues = useMemo(() => {
     const n = participants.length;
     if (n !== 3) return [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
@@ -214,21 +275,14 @@ const CoreVisualization = ({
       c.participants.includes(3)
     )?.cost ?? c2 + c3;
 
-    // For a 3-player cost game, we can compute the nucleolus analytically
-    // The nucleolus minimizes the maximum excess e(S,x) = c(S) - x(S)
-    // Using an iterative approach to find the lexicographically minimal excess vector
-    
-    // Start from the centroid of the core or equal split
     let x1 = C / 3;
     let x2 = C / 3;
     let x3 = C / 3;
 
-    // Iterative refinement - move towards the center of the core
     const iterations = 100;
     const step = 0.01;
 
     for (let iter = 0; iter < iterations; iter++) {
-      // Calculate excesses for each constraint
       const excesses = [
         { type: 'x1', value: c1 - x1 },
         { type: 'x2', value: c2 - x2 },
@@ -238,11 +292,9 @@ const CoreVisualization = ({
         { type: 'x23', value: c23 - x2 - x3 },
       ];
 
-      // Find the minimum excess (most violated constraint)
       const minExcess = Math.min(...excesses.map(e => e.value));
       const tightConstraints = excesses.filter(e => Math.abs(e.value - minExcess) < step * 2);
 
-      // Adjust allocation to balance tight constraints
       let dx1 = 0, dx2 = 0, dx3 = 0;
       
       for (const tc of tightConstraints) {
@@ -256,7 +308,6 @@ const CoreVisualization = ({
         }
       }
 
-      // Normalize to maintain efficiency (sum = C)
       const total = dx1 + dx2 + dx3;
       dx1 -= total / 3;
       dx2 -= total / 3;
@@ -266,13 +317,11 @@ const CoreVisualization = ({
       x2 += dx2;
       x3 += dx3;
 
-      // Project back to simplex
       const sum = x1 + x2 + x3;
       x1 = x1 * C / sum;
       x2 = x2 * C / sum;
       x3 = x3 * C / sum;
 
-      // Ensure non-negativity
       x1 = Math.max(0, x1);
       x2 = Math.max(0, x2);
       x3 = Math.max(0, x3);
@@ -284,7 +333,7 @@ const CoreVisualization = ({
   const nucleolusPoint = useMemo(() => {
     const bary = allocationToBarycentric(nucleolusValues);
     return barycentricToCartesian(bary);
-  }, [nucleolusValues]);
+  }, [nucleolusValues, allocationToBarycentric, barycentricToCartesian]);
 
   // Generate grid lines for the simplex
   const gridLines = useMemo(() => {
@@ -294,18 +343,14 @@ const CoreVisualization = ({
     for (let i = 1; i < divisions; i++) {
       const t = i / divisions;
       
-      // Lines parallel to each side
-      // Parallel to BC (bottom)
       const p1a = { x: vertices.A.x + t * (vertices.B.x - vertices.A.x), y: vertices.A.y + t * (vertices.B.y - vertices.A.y) };
       const p1b = { x: vertices.A.x + t * (vertices.C.x - vertices.A.x), y: vertices.A.y + t * (vertices.C.y - vertices.A.y) };
       lines.push({ x1: p1a.x, y1: p1a.y, x2: p1b.x, y2: p1b.y });
       
-      // Parallel to AC (right)
       const p2a = { x: vertices.B.x + t * (vertices.A.x - vertices.B.x), y: vertices.B.y + t * (vertices.A.y - vertices.B.y) };
       const p2b = { x: vertices.B.x + t * (vertices.C.x - vertices.B.x), y: vertices.B.y + t * (vertices.C.y - vertices.B.y) };
       lines.push({ x1: p2a.x, y1: p2a.y, x2: p2b.x, y2: p2b.y });
       
-      // Parallel to AB (left)
       const p3a = { x: vertices.C.x + t * (vertices.A.x - vertices.C.x), y: vertices.C.y + t * (vertices.A.y - vertices.C.y) };
       const p3b = { x: vertices.C.x + t * (vertices.B.x - vertices.C.x), y: vertices.C.y + t * (vertices.B.y - vertices.C.y) };
       lines.push({ x1: p3a.x, y1: p3a.y, x2: p3b.x, y2: p3b.y });
@@ -320,6 +365,34 @@ const CoreVisualization = ({
     const v = coreConstraints.vertices;
     return `M ${v[0].x} ${v[0].y} ${v.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ')} Z`;
   }, [coreConstraints.vertices]);
+
+  // Constraint descriptions for clickable lines
+  const constraintDescriptions: Record<string, { short: string; description: string }> = {
+    'x₁': { 
+      short: 'Individual Rationality for P1', 
+      description: `${participants[0]?.name || 'Participant 1'} should not pay more than their standalone cost. This ensures they benefit from joining the coalition.` 
+    },
+    'x₂': { 
+      short: 'Individual Rationality for P2', 
+      description: `${participants[1]?.name || 'Participant 2'} should not pay more than their standalone cost. This ensures they benefit from joining the coalition.` 
+    },
+    'x₃': { 
+      short: 'Individual Rationality for P3', 
+      description: `${participants[2]?.name || 'Participant 3'} should not pay more than their standalone cost. This ensures they benefit from joining the coalition.` 
+    },
+    'x₁+x₂': { 
+      short: 'Coalition Rationality for P1 & P2', 
+      description: `The combined cost for ${participants[0]?.name || 'P1'} and ${participants[1]?.name || 'P2'} should not exceed what they'd pay forming their own coalition, otherwise they'd leave.` 
+    },
+    'x₁+x₃': { 
+      short: 'Coalition Rationality for P1 & P3', 
+      description: `The combined cost for ${participants[0]?.name || 'P1'} and ${participants[2]?.name || 'P3'} should not exceed what they'd pay forming their own coalition, otherwise they'd leave.` 
+    },
+    'x₂+x₃': { 
+      short: 'Coalition Rationality for P2 & P3', 
+      description: `The combined cost for ${participants[1]?.name || 'P2'} and ${participants[2]?.name || 'P3'} should not exceed what they'd pay forming their own coalition, otherwise they'd leave.` 
+    },
+  };
 
   // Calculate constraint boundary lines
   const constraintLines = useMemo(() => {
@@ -351,72 +424,69 @@ const CoreVisualization = ({
     const lines: { 
       x1: number; y1: number; x2: number; y2: number; 
       label: string; 
+      constraintKey: string;
       type: 'individual' | 'coalition';
       color: string;
     }[] = [];
 
-    // Helper to get line endpoints for a constraint on the simplex
-    // For x_i = bound, we need to find where this intersects the simplex (x1 + x2 + x3 = C)
-    
-    // Individual constraint x1 = c1 (line parallel to edge BC)
+    // Individual constraint x1 = c1
     if (c1 < C && c1 > 0) {
       const x1 = c1;
-      // x2 ranges from 0 to C - c1, x3 = C - c1 - x2
       const p1 = allocationToBarycentric([x1, 0, C - x1]);
       const p2 = allocationToBarycentric([x1, C - x1, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁ ≤ ${c1}`, type: 'individual', color: 'hsl(var(--chart-1))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁ ≤ ${c1}`, constraintKey: 'x₁', type: 'individual', color: 'hsl(var(--chart-1))' });
     }
 
-    // Individual constraint x2 = c2 (line parallel to edge AC)
+    // Individual constraint x2 = c2
     if (c2 < C && c2 > 0) {
       const x2 = c2;
       const p1 = allocationToBarycentric([0, x2, C - x2]);
       const p2 = allocationToBarycentric([C - x2, x2, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂ ≤ ${c2}`, type: 'individual', color: 'hsl(var(--chart-2))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂ ≤ ${c2}`, constraintKey: 'x₂', type: 'individual', color: 'hsl(var(--chart-2))' });
     }
 
-    // Individual constraint x3 = c3 (line parallel to edge AB)
+    // Individual constraint x3 = c3
     if (c3 < C && c3 > 0) {
       const x3 = c3;
       const p1 = allocationToBarycentric([0, C - x3, x3]);
       const p2 = allocationToBarycentric([C - x3, 0, x3]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₃ ≤ ${c3}`, type: 'individual', color: 'hsl(var(--chart-3))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₃ ≤ ${c3}`, constraintKey: 'x₃', type: 'individual', color: 'hsl(var(--chart-3))' });
     }
 
-    // Coalition constraint x1 + x2 = c12 → x3 = C - c12
+    // Coalition constraint x1 + x2 = c12
     if (c12 < C && C - c12 > 0) {
       const x3 = C - c12;
       const p1 = allocationToBarycentric([0, C - x3, x3]);
       const p2 = allocationToBarycentric([C - x3, 0, x3]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₂ ≤ ${c12}`, type: 'coalition', color: 'hsl(var(--chart-4))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₂ ≤ ${c12}`, constraintKey: 'x₁+x₂', type: 'coalition', color: 'hsl(var(--chart-4))' });
     }
 
-    // Coalition constraint x1 + x3 = c13 → x2 = C - c13
+    // Coalition constraint x1 + x3 = c13
     if (c13 < C && C - c13 > 0) {
       const x2 = C - c13;
       const p1 = allocationToBarycentric([0, x2, C - x2]);
       const p2 = allocationToBarycentric([C - x2, x2, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₃ ≤ ${c13}`, type: 'coalition', color: 'hsl(var(--chart-5))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₃ ≤ ${c13}`, constraintKey: 'x₁+x₃', type: 'coalition', color: 'hsl(var(--chart-5))' });
     }
 
-    // Coalition constraint x2 + x3 = c23 → x1 = C - c23
+    // Coalition constraint x2 + x3 = c23
     if (c23 < C && C - c23 > 0) {
       const x1 = C - c23;
       const p1 = allocationToBarycentric([x1, 0, C - x1]);
       const p2 = allocationToBarycentric([x1, C - x1, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂+x₃ ≤ ${c23}`, type: 'coalition', color: 'hsl(var(--accent))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂+x₃ ≤ ${c23}`, constraintKey: 'x₂+x₃', type: 'coalition', color: 'hsl(var(--accent))' });
     }
 
     return lines;
@@ -424,6 +494,79 @@ const CoreVisualization = ({
 
   // State for showing constraint labels
   const [showConstraints, setShowConstraints] = useState(true);
+  const [highlightedConstraint, setHighlightedConstraint] = useState<string | null>(null);
+
+  // Handle constraint click
+  const handleConstraintClick = (line: typeof constraintLines[0]) => {
+    const desc = constraintDescriptions[line.constraintKey];
+    setClickedConstraint({
+      label: line.label,
+      description: desc?.description || 'This constraint defines a boundary of the Core region.',
+      type: line.type,
+      color: line.color,
+    });
+  };
+
+  // Handle drag for points
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    if (!draggingPoint) return;
+    
+    const svg = e.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Clamp to triangle bounds
+    const clampedX = Math.max(vertices.B.x, Math.min(vertices.C.x, x));
+    const clampedY = Math.max(vertices.A.y, Math.min(vertices.B.y, y));
+    
+    const basePoint = draggingPoint === 'scrb' ? scrbPoint : 
+                      draggingPoint === 'shapley' ? shapleyPoint : nucleolusPoint;
+    
+    setDragOffsets(prev => ({
+      ...prev,
+      [draggingPoint]: { x: clampedX - basePoint.x, y: clampedY - basePoint.y }
+    }));
+    
+    // Calculate and show allocation values for dragged position
+    const bary = cartesianToBarycentric(clampedX, clampedY);
+    const C = grandCoalitionCost;
+    const values = [bary[0] * C, bary[1] * C, bary[2] * C];
+    setHoveredPoint({ type: 'custom', x: clampedX, y: clampedY, values });
+  }, [draggingPoint, scrbPoint, shapleyPoint, nucleolusPoint, vertices, cartesianToBarycentric, grandCoalitionCost]);
+
+  const handleMouseUp = useCallback(() => {
+    setDraggingPoint(null);
+    setHoveredPoint(null);
+  }, []);
+
+  // Get dragged point position
+  const getDraggedPosition = (type: 'scrb' | 'shapley' | 'nucleolus') => {
+    const basePoint = type === 'scrb' ? scrbPoint : 
+                      type === 'shapley' ? shapleyPoint : nucleolusPoint;
+    const offset = dragOffsets[type];
+    return {
+      x: basePoint.x + offset.x,
+      y: basePoint.y + offset.y,
+    };
+  };
+
+  // Check if dragged point is in core
+  const isDraggedPointInCore = (type: 'scrb' | 'shapley' | 'nucleolus') => {
+    const pos = getDraggedPosition(type);
+    return isPointInCore(pos.x, pos.y, grandCoalitionCost);
+  };
+
+  // Reset drag offsets
+  const resetDrag = () => {
+    setDragOffsets({
+      scrb: { x: 0, y: 0 },
+      shapley: { x: 0, y: 0 },
+      nucleolus: { x: 0, y: 0 },
+    });
+  };
+
+  const hasDragOffsets = Object.values(dragOffsets).some(o => o.x !== 0 || o.y !== 0);
 
   return (
     <Card className="card-elevated">
@@ -436,17 +579,24 @@ const CoreVisualization = ({
               <Info className="w-4 h-4 text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
-              <p>The shaded region represents the Core - all stable allocations where no coalition has an incentive to defect.</p>
+              <p>The shaded region represents the Core - all stable allocations where no coalition has an incentive to defect. Click constraint lines for explanations, drag points to explore!</p>
             </TooltipContent>
           </Tooltip>
         </CardTitle>
         <CardDescription>
-          Triangular coordinate plot showing feasible allocation space
+          Triangular coordinate plot showing feasible allocation space • Click constraints • Drag points
         </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex justify-center">
-          <svg width={width} height={height} className="overflow-visible">
+          <svg 
+            width={width} 
+            height={height} 
+            className="overflow-visible cursor-crosshair"
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
             {/* Definitions */}
             <defs>
               <linearGradient id="coreGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -455,6 +605,13 @@ const CoreVisualization = ({
               </linearGradient>
               <filter id="glow">
                 <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="strongGlow">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
                 <feMerge>
                   <feMergeNode in="coloredBlur"/>
                   <feMergeNode in="SourceGraphic"/>
@@ -476,39 +633,67 @@ const CoreVisualization = ({
               transition={{ duration: 0.5 }}
               points={`${vertices.A.x},${vertices.A.y} ${vertices.B.x},${vertices.B.y} ${vertices.C.x},${vertices.C.y}`}
               fill="none"
-              stroke="hsl(var(--primary))"
+              stroke="hsl(var(--border))"
               strokeWidth="2"
             />
 
-            {/* Constraint boundary lines */}
+            {/* Constraint boundary lines - clickable */}
             {showConstraints && constraintLines.map((line, i) => (
               <motion.g
                 key={i}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
+                className="cursor-pointer"
+                onMouseEnter={() => setHighlightedConstraint(line.constraintKey)}
+                onMouseLeave={() => setHighlightedConstraint(null)}
+                onClick={() => handleConstraintClick(line)}
               >
+                {/* Invisible wider hitbox */}
+                <line
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke="transparent"
+                  strokeWidth="16"
+                />
+                {/* Visible line */}
                 <line
                   x1={line.x1}
                   y1={line.y1}
                   x2={line.x2}
                   y2={line.y2}
                   stroke={line.color}
-                  strokeWidth="1.5"
+                  strokeWidth={highlightedConstraint === line.constraintKey ? 3 : 1.5}
                   strokeDasharray={line.type === 'individual' ? "4 2" : "8 4"}
-                  opacity="0.7"
+                  opacity={highlightedConstraint === line.constraintKey ? 1 : 0.7}
+                  filter={highlightedConstraint === line.constraintKey ? "url(#glow)" : undefined}
+                  className="transition-all duration-200"
                 />
                 {/* Label at midpoint */}
                 <text
                   x={(line.x1 + line.x2) / 2 + (i % 2 === 0 ? 8 : -8)}
                   y={(line.y1 + line.y2) / 2 + (i < 3 ? -6 : 12)}
                   textAnchor="middle"
-                  className="text-[9px] font-mono"
+                  className="text-[9px] font-mono pointer-events-none"
                   fill={line.color}
-                  opacity="0.9"
+                  opacity={highlightedConstraint === line.constraintKey ? 1 : 0.9}
+                  fontWeight={highlightedConstraint === line.constraintKey ? 600 : 400}
                 >
                   {line.label}
                 </text>
+                {/* Click hint */}
+                {highlightedConstraint === line.constraintKey && (
+                  <text
+                    x={(line.x1 + line.x2) / 2}
+                    y={(line.y1 + line.y2) / 2 + 24}
+                    textAnchor="middle"
+                    className="text-[8px] fill-muted-foreground pointer-events-none"
+                  >
+                    Click for details
+                  </text>
+                )}
               </motion.g>
             ))}
 
@@ -547,7 +732,7 @@ const CoreVisualization = ({
               transition={{ delay: 0.6, type: "spring" }}
               style={{ cursor: 'pointer' }}
               onMouseEnter={() => setHoveredPoint({ type: 'centroid', x: centroid.x, y: centroid.y })}
-              onMouseLeave={() => setHoveredPoint(null)}
+              onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
               <circle
                 cx={centroid.x}
@@ -559,94 +744,128 @@ const CoreVisualization = ({
               />
             </motion.g>
 
-            {/* SCRB allocation point */}
+            {/* SCRB allocation point - Draggable */}
             <motion.g
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.7, type: "spring" }}
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={() => setHoveredPoint({ type: 'scrb', x: scrbPoint.x, y: scrbPoint.y })}
-              onMouseLeave={() => setHoveredPoint(null)}
+              style={{ cursor: draggingPoint === 'scrb' ? 'grabbing' : 'grab' }}
+              onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('scrb'); }}
+              onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'scrb', x: getDraggedPosition('scrb').x, y: getDraggedPosition('scrb').y })}
+              onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
               <circle
-                cx={scrbPoint.x}
-                cy={scrbPoint.y}
-                r={hoveredPoint?.type === 'scrb' ? 10 : 8}
-                fill="hsl(var(--primary))"
+                cx={getDraggedPosition('scrb').x}
+                cy={getDraggedPosition('scrb').y}
+                r={hoveredPoint?.type === 'scrb' || draggingPoint === 'scrb' ? 12 : 8}
+                fill={isDraggedPointInCore('scrb') ? "hsl(var(--primary))" : "hsl(var(--destructive))"}
                 stroke="white"
                 strokeWidth="2"
-                filter="url(#glow)"
+                filter={draggingPoint === 'scrb' ? "url(#strongGlow)" : "url(#glow)"}
                 className="transition-all duration-200"
               />
-              <text
-                x={scrbPoint.x}
-                y={scrbPoint.y - 14}
-                textAnchor="middle"
-                className="text-xs font-medium fill-primary pointer-events-none"
-              >
-                SCRB
-              </text>
+              {dragOffsets.scrb.x === 0 && dragOffsets.scrb.y === 0 && (
+                <text
+                  x={getDraggedPosition('scrb').x}
+                  y={getDraggedPosition('scrb').y - 14}
+                  textAnchor="middle"
+                  className="text-xs font-medium fill-primary pointer-events-none"
+                >
+                  SCRB
+                </text>
+              )}
+              {/* Drag indicator */}
+              <Move 
+                x={getDraggedPosition('scrb').x - 5} 
+                y={getDraggedPosition('scrb').y - 5} 
+                width={10} 
+                height={10} 
+                className="pointer-events-none" 
+                style={{ color: 'white', opacity: 0.8 }}
+              />
             </motion.g>
 
-            {/* Shapley allocation point */}
+            {/* Shapley allocation point - Draggable */}
             <motion.g
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.8, type: "spring" }}
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={() => setHoveredPoint({ type: 'shapley', x: shapleyPoint.x, y: shapleyPoint.y })}
-              onMouseLeave={() => setHoveredPoint(null)}
+              style={{ cursor: draggingPoint === 'shapley' ? 'grabbing' : 'grab' }}
+              onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('shapley'); }}
+              onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'shapley', x: getDraggedPosition('shapley').x, y: getDraggedPosition('shapley').y })}
+              onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
               <circle
-                cx={shapleyPoint.x}
-                cy={shapleyPoint.y}
-                r={hoveredPoint?.type === 'shapley' ? 10 : 8}
-                fill="hsl(var(--interactive))"
+                cx={getDraggedPosition('shapley').x}
+                cy={getDraggedPosition('shapley').y}
+                r={hoveredPoint?.type === 'shapley' || draggingPoint === 'shapley' ? 12 : 8}
+                fill={isDraggedPointInCore('shapley') ? "hsl(var(--interactive))" : "hsl(var(--destructive))"}
                 stroke="white"
                 strokeWidth="2"
-                filter="url(#glow)"
+                filter={draggingPoint === 'shapley' ? "url(#strongGlow)" : "url(#glow)"}
                 className="transition-all duration-200"
               />
-              <text
-                x={shapleyPoint.x}
-                y={shapleyPoint.y + 20}
-                textAnchor="middle"
-                className="text-xs font-medium fill-interactive pointer-events-none"
-              >
-                Shapley
-              </text>
+              {dragOffsets.shapley.x === 0 && dragOffsets.shapley.y === 0 && (
+                <text
+                  x={getDraggedPosition('shapley').x}
+                  y={getDraggedPosition('shapley').y + 20}
+                  textAnchor="middle"
+                  className="text-xs font-medium fill-interactive pointer-events-none"
+                >
+                  Shapley
+                </text>
+              )}
+              <Move 
+                x={getDraggedPosition('shapley').x - 5} 
+                y={getDraggedPosition('shapley').y - 5} 
+                width={10} 
+                height={10} 
+                className="pointer-events-none" 
+                style={{ color: 'white', opacity: 0.8 }}
+              />
             </motion.g>
 
-            {/* Nucleolus allocation point */}
+            {/* Nucleolus allocation point - Draggable */}
             <motion.g
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.9, type: "spring" }}
-              style={{ cursor: 'pointer' }}
-              onMouseEnter={() => setHoveredPoint({ type: 'nucleolus', x: nucleolusPoint.x, y: nucleolusPoint.y })}
-              onMouseLeave={() => setHoveredPoint(null)}
+              style={{ cursor: draggingPoint === 'nucleolus' ? 'grabbing' : 'grab' }}
+              onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('nucleolus'); }}
+              onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'nucleolus', x: getDraggedPosition('nucleolus').x, y: getDraggedPosition('nucleolus').y })}
+              onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
               <circle
-                cx={nucleolusPoint.x}
-                cy={nucleolusPoint.y}
-                r={hoveredPoint?.type === 'nucleolus' ? 10 : 8}
-                fill="hsl(var(--accent))"
+                cx={getDraggedPosition('nucleolus').x}
+                cy={getDraggedPosition('nucleolus').y}
+                r={hoveredPoint?.type === 'nucleolus' || draggingPoint === 'nucleolus' ? 12 : 8}
+                fill={isDraggedPointInCore('nucleolus') ? "hsl(var(--accent))" : "hsl(var(--destructive))"}
                 stroke="white"
                 strokeWidth="2"
-                filter="url(#glow)"
+                filter={draggingPoint === 'nucleolus' ? "url(#strongGlow)" : "url(#glow)"}
                 className="transition-all duration-200"
               />
-              <text
-                x={nucleolusPoint.x + 16}
-                y={nucleolusPoint.y + 4}
-                textAnchor="start"
-                className="text-xs font-medium fill-accent pointer-events-none"
-              >
-                Nucleolus
-              </text>
+              {dragOffsets.nucleolus.x === 0 && dragOffsets.nucleolus.y === 0 && (
+                <text
+                  x={getDraggedPosition('nucleolus').x + 16}
+                  y={getDraggedPosition('nucleolus').y + 4}
+                  textAnchor="start"
+                  className="text-xs font-medium fill-accent pointer-events-none"
+                >
+                  Nucleolus
+                </text>
+              )}
+              <Move 
+                x={getDraggedPosition('nucleolus').x - 5} 
+                y={getDraggedPosition('nucleolus').y - 5} 
+                width={10} 
+                height={10} 
+                className="pointer-events-none" 
+                style={{ color: 'white', opacity: 0.8 }}
+              />
             </motion.g>
 
-            {/* Axis labels showing percentage */}
+            {/* Axis labels */}
             <g className="text-[10px] fill-muted-foreground font-mono">
               <text x={centerX} y={height - 8} textAnchor="middle">Cost share proportions</text>
             </g>
@@ -654,7 +873,6 @@ const CoreVisualization = ({
             {/* Hover tooltip */}
             {hoveredPoint && (
               <g>
-                {/* Tooltip background */}
                 <rect
                   x={Math.min(Math.max(hoveredPoint.x - 70, 10), width - 150)}
                   y={hoveredPoint.y - 90}
@@ -666,7 +884,6 @@ const CoreVisualization = ({
                   strokeWidth="1"
                   filter="drop-shadow(0 4px 6px rgba(0,0,0,0.1))"
                 />
-                {/* Tooltip title */}
                 <text
                   x={Math.min(Math.max(hoveredPoint.x, 80), width - 80)}
                   y={hoveredPoint.y - 68}
@@ -675,9 +892,9 @@ const CoreVisualization = ({
                 >
                   {hoveredPoint.type === 'scrb' ? 'SCRB Allocation' : 
                    hoveredPoint.type === 'shapley' ? 'Shapley Value' :
-                   hoveredPoint.type === 'nucleolus' ? 'Nucleolus' : 'Equal Split'}
+                   hoveredPoint.type === 'nucleolus' ? 'Nucleolus' : 
+                   hoveredPoint.type === 'custom' ? 'Custom Position' : 'Equal Split'}
                 </text>
-                {/* Divider line */}
                 <line
                   x1={Math.min(Math.max(hoveredPoint.x - 60, 20), width - 140)}
                   y1={hoveredPoint.y - 58}
@@ -686,9 +903,9 @@ const CoreVisualization = ({
                   stroke="hsl(var(--border))"
                   strokeWidth="1"
                 />
-                {/* Allocation values */}
                 {participants.map((p, i) => {
-                  const values = hoveredPoint.type === 'scrb' ? scrbAllocations :
+                  const values = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
+                                 hoveredPoint.type === 'scrb' ? scrbAllocations :
                                  hoveredPoint.type === 'shapley' ? shapleyValues :
                                  hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                                  [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
@@ -703,13 +920,13 @@ const CoreVisualization = ({
                     </text>
                   );
                 })}
-                {/* Total */}
                 <text
                   x={Math.min(Math.max(hoveredPoint.x - 55, 25), width - 135)}
                   y={hoveredPoint.y - 42 + participants.length * 18}
                   className="text-[11px] fill-muted-foreground font-mono"
                 >
-                  Total: {(hoveredPoint.type === 'scrb' ? scrbAllocations :
+                  Total: {(hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
+                          hoveredPoint.type === 'scrb' ? scrbAllocations :
                           hoveredPoint.type === 'shapley' ? shapleyValues :
                           hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                           [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3])
@@ -720,19 +937,74 @@ const CoreVisualization = ({
           </svg>
         </div>
 
+        {/* Constraint Explanation Popup */}
+        <AnimatePresence>
+          {clickedConstraint && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="mt-4 p-4 rounded-lg border-2"
+              style={{ borderColor: clickedConstraint.color, backgroundColor: `${clickedConstraint.color}10` }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MousePointer className="w-4 h-4" style={{ color: clickedConstraint.color }} />
+                    <span className="font-semibold" style={{ color: clickedConstraint.color }}>
+                      {clickedConstraint.label}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                      {clickedConstraint.type === 'individual' ? 'Individual Rationality' : 'Coalition Rationality'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {clickedConstraint.description}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setClickedConstraint(null)}
+                  className="shrink-0"
+                >
+                  ✕
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Controls and Legend */}
         <div className="mt-6 flex flex-col gap-4">
-          {/* Toggle constraints button */}
-          <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowConstraints(!showConstraints)}
-              className="text-xs"
-            >
-              {showConstraints ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
-              {showConstraints ? 'Hide' : 'Show'} Constraints
-            </Button>
+          {/* Toggle constraints button and reset drag */}
+          <div className="flex justify-between items-center">
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <Move className="w-3 h-3" />
+              Drag points to explore stability
+            </div>
+            <div className="flex gap-2">
+              {hasDragOffsets && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={resetDrag}
+                  className="text-xs"
+                >
+                  <RotateCcw className="w-3 h-3 mr-1" />
+                  Reset Positions
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowConstraints(!showConstraints)}
+                className="text-xs"
+              >
+                {showConstraints ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+                {showConstraints ? 'Hide' : 'Show'} Constraints
+              </Button>
+            </div>
           </div>
 
           {/* Legend */}
@@ -757,12 +1029,16 @@ const CoreVisualization = ({
               <div className="w-3 h-3 rounded-full bg-muted-foreground/50" />
               <span className="text-muted-foreground">Equal Split</span>
             </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-destructive" />
+              <span className="text-muted-foreground">Outside Core</span>
+            </div>
           </div>
 
           {/* Constraint lines legend */}
           {showConstraints && (
             <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-              <p className="text-xs font-medium mb-2 text-foreground">Constraint Boundaries</p>
+              <p className="text-xs font-medium mb-2 text-foreground">Constraint Boundaries (click for details)</p>
               <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div className="flex items-center gap-2">
                   <div className="w-6 h-0 border-t-2 border-dashed" style={{ borderColor: 'hsl(var(--chart-1))' }} />
@@ -789,12 +1065,15 @@ const CoreVisualization = ({
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
-            Points inside the shaded region satisfy all individual and coalition rationality constraints.
+            Points inside the shaded region satisfy all individual and coalition rationality constraints. Drag solution points to see if alternative allocations would be stable.
           </p>
         </div>
       </CardContent>
     </Card>
   );
 };
+
+// Import RotateCcw icon for reset button
+import { RotateCcw } from "lucide-react";
 
 export default CoreVisualization;
