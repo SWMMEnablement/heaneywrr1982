@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BookOpen, Users, Target, Lightbulb, Quote, ArrowRight } from "lucide-react";
+import { BookOpen, Users, Target, Lightbulb, Quote, ArrowRight, FileText, ExternalLink, GraduationCap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PaperDetails = () => {
@@ -46,6 +46,33 @@ const PaperDetails = () => {
     },
   ];
 
+  const recentCitations = [
+    {
+      authors: "Zhang, L., Xie, J., Chen, X., Zhan, Y., & Zhou, L.",
+      year: "2020",
+      title: "Cooperative Game-Based Synergistic Gains Allocation Methods for Wind-Solar-Hydro Hybrid Generation System with Cascade Hydropower",
+      journal: "Energies, 13(15), 3890",
+      note: "Cites the paper noting that Heaney et al. investigated boundaries of the core and proposed the MCRS method to simplify allocation processes compared to the Shapley value or nucleolus methods.",
+      url: "https://doi.org/10.3390/en13153890",
+    },
+    {
+      authors: "Dinar, A., & Hogarth, M.",
+      year: "2015",
+      title: "Game Theory and Water Resources: Critical Review of its Contributions, Progress and Remaining Challenges",
+      journal: "Foundations and Trends® in Microeconomics, 11(1–2), 1–139",
+      note: "Lists it as a key historical publication in their comprehensive review of game theory applications in water resources.",
+      url: "https://doi.org/10.1561/0700000066",
+    },
+    {
+      authors: "Danesh-yazdi, M., Abrishamchi, A., & Tajrishy, M.",
+      year: "n.d.",
+      title: "Conflict Resolution of Water Resources Allocations Using the Game Theoretic Approach: The Case of Orumieh River Basin",
+      journal: "Water and Wastewater",
+      note: "Groups it with foundational game theory approaches like those by Rogers (1969) and Lejano & Davos (1995) for conflict resolution.",
+      url: "https://www.wwjournal.ir/article_4195_en.html",
+    },
+  ];
+
   return (
     <section id="paper" className="py-20 px-6 bg-gradient-to-b from-background to-secondary/30">
       <div className="container max-w-6xl">
@@ -66,6 +93,44 @@ const PaperDetails = () => {
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Key insights from the 1982 Water Resources Research paper on cost allocation methods
           </p>
+        </motion.div>
+
+        {/* Paper Details Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.05 }}
+          className="mb-8"
+        >
+          <Card className="card-elevated border-l-4 border-l-primary">
+            <CardContent className="py-6">
+              <div className="flex gap-4">
+                <FileText className="w-8 h-8 text-primary flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground mb-3">Paper Details</h3>
+                  <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Title:</span>
+                      <p className="font-medium">Methods for Apportioning the Cost of a Water Resource Project</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Authors:</span>
+                      <p className="font-medium">James P. Heaney & Robert E. Dickinson</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Publication:</span>
+                      <p className="font-medium">Water Resources Research, 18(3), 476–482</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Year:</span>
+                      <p className="font-medium">1982</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Citation */}
@@ -194,6 +259,99 @@ const PaperDetails = () => {
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Recent Citations Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.7 }}
+          className="mt-16"
+        >
+          <div className="text-center mb-8">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-interactive/10 text-interactive text-sm font-medium mb-4">
+              <GraduationCap className="w-4 h-4" />
+              Active Research Impact
+            </span>
+            <h3 className="text-2xl font-serif font-bold text-primary">
+              Recent Citations & Significance
+            </h3>
+            <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+              This paper is well-documented in the literature and continues to be actively cited in recent research regarding cooperative game theory and water resource management.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {recentCitations.map((citation, index) => (
+              <motion.div
+                key={citation.title}
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: 0.8 + index * 0.1 }}
+              >
+                <Card className="card-elevated hover:shadow-lg transition-shadow duration-300">
+                  <CardContent className="py-5">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-interactive/10 flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-5 h-5 text-interactive" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-foreground text-sm leading-snug mb-1">
+                              {citation.title}
+                            </h4>
+                            <p className="text-xs text-muted-foreground mb-2">
+                              {citation.authors} ({citation.year}) • <span className="italic">{citation.journal}</span>
+                            </p>
+                            <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-lg border-l-2 border-interactive/50">
+                              {citation.note}
+                            </p>
+                          </div>
+                          <a
+                            href={citation.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-shrink-0 p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+                            title="View publication"
+                          >
+                            <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Significance note */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 1.1 }}
+            className="mt-6"
+          >
+            <Card className="card-elevated bg-gradient-to-br from-interactive/5 to-accent/5 border-interactive/20">
+              <CardContent className="py-5">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-interactive/10 flex items-center justify-center flex-shrink-0">
+                    <Lightbulb className="w-4 h-4 text-interactive" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-foreground text-sm mb-1">Research Significance</h4>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      This paper is recognized for its contribution to cost allocation methods, specifically regarding the <strong>Minimum Cost-Remaining Savings (MCRS)</strong> method (also known as the Separable Costs-Remaining Benefits method). The framework continues to inform modern applications in renewable energy allocation, transboundary water management, and infrastructure cost-sharing.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </motion.div>
       </div>
     </section>
