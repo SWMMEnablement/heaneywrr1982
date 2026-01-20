@@ -1,12 +1,13 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import CoreVisualization from "./CoreVisualization";
+import CompareChart from "./CompareChart";
 interface Participant {
   id: number;
   name: string;
@@ -32,7 +33,9 @@ const CostCalculator = () => {
     { participants: [1, 2, 3], cost: 7 },
   ]);
 
-  const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie' | 'radar'>('grouped');
+  const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie' | 'radar' | 'compare'>('grouped');
+  const [compareMethod1, setCompareMethod1] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('scrb');
+  const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
 
   const updateParticipant = (id: number, field: keyof Participant, value: string | number) => {
     setParticipants(prev => 
@@ -534,6 +537,15 @@ const CostCalculator = () => {
                   <RadarIcon className="w-3 h-3 mr-1" />
                   Radar
                 </Button>
+                <Button
+                  variant={chartMode === 'compare' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartMode('compare')}
+                  className="h-8 px-3 text-xs"
+                >
+                  <GitCompare className="w-3 h-3 mr-1" />
+                  Compare
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -733,7 +745,7 @@ const CostCalculator = () => {
                       </div>
                     ))}
                   </div>
-                ) : (
+                ) : chartMode === 'radar' ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {participants.map((p, i) => {
                       const radarData = [
@@ -786,6 +798,18 @@ const CostCalculator = () => {
                       );
                     })}
                   </div>
+                ) : (
+                  <CompareChart
+                    participants={participants}
+                    scrbAllocations={calculations.scrbAllocations}
+                    shapleyValues={calculations.shapleyValues}
+                    nucleolusValues={calculations.nucleolusValues}
+                    equalSplit={calculations.equalSplit}
+                    compareMethod1={compareMethod1}
+                    compareMethod2={compareMethod2}
+                    setCompareMethod1={setCompareMethod1}
+                    setCompareMethod2={setCompareMethod2}
+                  />
                 )}
               </div>
             </CardContent>
