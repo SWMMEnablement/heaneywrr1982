@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Lightbulb, GitBranch, Scale, Award, ChevronRight, Puzzle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import Glossary from "./Glossary";
 
 const GameTheoryBackground = () => {
   const concepts = [
@@ -213,6 +214,9 @@ const GameTheoryBackground = () => {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Interactive Glossary */}
+        <Glossary />
       </div>
     </section>
   );
