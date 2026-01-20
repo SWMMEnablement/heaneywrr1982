@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from "recharts";
 import CoreVisualization from "./CoreVisualization";
 interface Participant {
   id: number;
@@ -32,7 +32,7 @@ const CostCalculator = () => {
     { participants: [1, 2, 3], cost: 7 },
   ]);
 
-  const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie'>('grouped');
+  const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie' | 'radar'>('grouped');
 
   const updateParticipant = (id: number, field: keyof Participant, value: string | number) => {
     setParticipants(prev => 
@@ -525,6 +525,15 @@ const CostCalculator = () => {
                   <PieChartIcon className="w-3 h-3 mr-1" />
                   Pie
                 </Button>
+                <Button
+                  variant={chartMode === 'radar' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartMode('radar')}
+                  className="h-8 px-3 text-xs"
+                >
+                  <RadarIcon className="w-3 h-3 mr-1" />
+                  Radar
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
@@ -671,7 +680,7 @@ const CostCalculator = () => {
                       ))}
                     </BarChart>
                   </ResponsiveContainer>
-                ) : (
+                ) : chartMode === 'pie' ? (
                   <div className="grid grid-cols-2 gap-6">
                     {[
                       { name: 'SCRB', values: calculations.scrbAllocations, color: 'hsl(var(--primary))' },
@@ -723,6 +732,59 @@ const CostCalculator = () => {
                         </p>
                       </div>
                     ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {participants.map((p, i) => {
+                      const radarData = [
+                        { method: 'SCRB', value: Number(calculations.scrbAllocations[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
+                        { method: 'Shapley', value: Number(calculations.shapleyValues[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
+                        { method: 'Nucleolus', value: Number(calculations.nucleolusValues[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
+                        { method: 'Equal Split', value: Number(calculations.equalSplit[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
+                      ];
+                      return (
+                        <div key={p.id} className="flex flex-col items-center">
+                          <h4 className="text-sm font-medium mb-2" style={{ color: `hsl(var(--chart-${(i % 5) + 1}))` }}>
+                            {p.name.length > 15 ? p.name.slice(0, 15) + '…' : p.name}
+                          </h4>
+                          <ResponsiveContainer width="100%" height={220}>
+                            <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                              <PolarGrid stroke="hsl(var(--border))" />
+                              <PolarAngleAxis 
+                                dataKey="method" 
+                                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
+                              />
+                              <PolarRadiusAxis 
+                                angle={30} 
+                                domain={[0, 'auto']} 
+                                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                                axisLine={{ stroke: 'hsl(var(--border))' }}
+                              />
+                              <Radar
+                                name={p.name}
+                                dataKey="value"
+                                stroke={`hsl(var(--chart-${(i % 5) + 1}))`}
+                                fill={`hsl(var(--chart-${(i % 5) + 1}))`}
+                                fillOpacity={0.4}
+                                animationDuration={800}
+                              />
+                              <RechartsTooltip
+                                contentStyle={{
+                                  backgroundColor: 'hsl(var(--card))',
+                                  border: '1px solid hsl(var(--border))',
+                                  borderRadius: '8px',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                }}
+                                formatter={(value: number) => value.toFixed(2)}
+                              />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Avg: {((calculations.scrbAllocations[i] + calculations.shapleyValues[i] + calculations.nucleolusValues[i] + calculations.equalSplit[i]) / 4).toFixed(2)}
+                          </p>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
