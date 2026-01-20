@@ -1,11 +1,11 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 import CoreVisualization from "./CoreVisualization";
 interface Participant {
   id: number;
@@ -32,7 +32,7 @@ const CostCalculator = () => {
     { participants: [1, 2, 3], cost: 7 },
   ]);
 
-  const [chartMode, setChartMode] = useState<'grouped' | 'stacked'>('grouped');
+  const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie'>('grouped');
 
   const updateParticipant = (id: number, field: keyof Participant, value: string | number) => {
     setParticipants(prev => 
@@ -516,12 +516,21 @@ const CostCalculator = () => {
                   <Layers className="w-3 h-3 mr-1" />
                   Stacked
                 </Button>
+                <Button
+                  variant={chartMode === 'pie' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => setChartMode('pie')}
+                  className="h-8 px-3 text-xs"
+                >
+                  <PieChartIcon className="w-3 h-3 mr-1" />
+                  Pie
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  {chartMode === 'grouped' ? (
+              <div className={chartMode === 'pie' ? 'h-auto' : 'h-80'}>
+                {chartMode === 'grouped' ? (
+                  <ResponsiveContainer width="100%" height={320}>
                     <BarChart
                       data={participants.map((p, i) => ({
                         name: p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name,
@@ -592,7 +601,9 @@ const CostCalculator = () => {
                         animationDuration={800}
                       />
                     </BarChart>
-                  ) : (
+                  </ResponsiveContainer>
+                ) : chartMode === 'stacked' ? (
+                  <ResponsiveContainer width="100%" height={320}>
                     <BarChart
                       data={[
                         {
@@ -659,8 +670,61 @@ const CostCalculator = () => {
                         />
                       ))}
                     </BarChart>
-                  )}
-                </ResponsiveContainer>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="grid grid-cols-2 gap-6">
+                    {[
+                      { name: 'SCRB', values: calculations.scrbAllocations, color: 'hsl(var(--primary))' },
+                      { name: 'Shapley', values: calculations.shapleyValues, color: 'hsl(var(--interactive))' },
+                      { name: 'Nucleolus', values: calculations.nucleolusValues, color: 'hsl(var(--accent))' },
+                      { name: 'Equal Split', values: calculations.equalSplit, color: 'hsl(var(--muted-foreground))' },
+                    ].map((method) => (
+                      <div key={method.name} className="flex flex-col items-center">
+                        <h4 className="text-sm font-medium mb-2" style={{ color: method.color }}>{method.name}</h4>
+                        <ResponsiveContainer width="100%" height={180}>
+                          <PieChart>
+                            <Pie
+                              data={participants.map((p, i) => ({
+                                name: p.name,
+                                value: Number(method.values[i].toFixed(2)),
+                              }))}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={35}
+                              outerRadius={65}
+                              paddingAngle={2}
+                              dataKey="value"
+                              animationDuration={800}
+                              label={({ name, percent }) => `${name.length > 8 ? name.slice(0, 8) + '…' : name} ${(percent * 100).toFixed(0)}%`}
+                              labelLine={{ stroke: 'hsl(var(--muted-foreground))', strokeWidth: 1 }}
+                            >
+                              {participants.map((_, i) => (
+                                <Cell 
+                                  key={`cell-${i}`} 
+                                  fill={`hsl(var(--chart-${(i % 5) + 1}))`}
+                                  stroke="hsl(var(--background))"
+                                  strokeWidth={2}
+                                />
+                              ))}
+                            </Pie>
+                            <RechartsTooltip
+                              contentStyle={{
+                                backgroundColor: 'hsl(var(--card))',
+                                border: '1px solid hsl(var(--border))',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                              }}
+                              formatter={(value: number) => value.toFixed(2)}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Total: {method.values.reduce((a, b) => a + b, 0).toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
