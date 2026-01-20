@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronRight, ChevronLeft, Droplets, Users, Calculator, Target, Lightbulb, CheckCircle2 } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Droplets, Users, Calculator, Target, Lightbulb, CheckCircle2, Triangle, MousePointer, Move } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
@@ -65,6 +65,30 @@ const tourSteps = [
   },
   {
     id: 5,
+    icon: Triangle,
+    title: "The Core Visualization",
+    subtitle: "Interactive Stability Analysis",
+    content: "The triangular Core plot shows all stable allocations. It's fully interactive—click and drag to explore!",
+    interactiveFeatures: [
+      { 
+        icon: "click", 
+        title: "Click Constraint Lines", 
+        desc: "Each colored line (like x₁+x₂ ≤ 5) represents a stability condition. Click any line to see what it means in plain English." 
+      },
+      { 
+        icon: "drag", 
+        title: "Drag Allocation Points", 
+        desc: "Drag the SCRB, Shapley, or Nucleolus dots around. Watch them change color—green means stable (in the Core), red means unstable!" 
+      },
+      { 
+        icon: "hover", 
+        title: "Hover for Values", 
+        desc: "Hover over any point to see the exact allocation amounts for each participant." 
+      },
+    ],
+  },
+  {
+    id: 6,
     icon: Lightbulb,
     title: "Explore & Experiment",
     subtitle: "What Happens If...?",
@@ -73,6 +97,7 @@ const tourSteps = [
       "Increase Hilltop's standalone cost to $8M—who benefits?",
       "Make all coalition costs equal—what happens to Shapley?",
       "Find inputs where Equal Split is unfair to someone",
+      "Drag Shapley outside the Core—which constraint breaks first?",
     ],
     cta: "Ready to start experimenting?",
   },
@@ -223,6 +248,27 @@ const OnboardingTour = ({ open, onOpenChange, onComplete }: OnboardingTourProps)
                         <div>
                           <span className="font-medium text-sm">{m.name}</span>
                           <p className="text-xs text-muted-foreground">{m.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {step.interactiveFeatures && (
+                  <div className="space-y-3 pt-2">
+                    {step.interactiveFeatures.map((feature, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/50"
+                      >
+                        <div className="p-1.5 rounded-md bg-interactive/10 shrink-0">
+                          {feature.icon === 'click' && <MousePointer className="w-4 h-4 text-interactive" />}
+                          {feature.icon === 'drag' && <Move className="w-4 h-4 text-accent" />}
+                          {feature.icon === 'hover' && <Target className="w-4 h-4 text-primary" />}
+                        </div>
+                        <div>
+                          <span className="font-medium text-sm">{feature.title}</span>
+                          <p className="text-xs text-muted-foreground mt-0.5">{feature.desc}</p>
                         </div>
                       </div>
                     ))}
