@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Droplets, Plane, AlertTriangle, ChevronRight } from "lucide-react";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { GlossaryTermLink } from "./Glossary";
 
 export interface Scenario {
   id: 'reservoir' | 'airport' | 'emptyCore';
@@ -56,10 +57,10 @@ export const scenarios: Scenario[] = [
   {
     id: 'emptyCore',
     name: "Empty Core Game",
-    description: "A scenario where no stable allocation exists—any proposed split gives someone an incentive to leave the coalition.",
+    description: "A scenario where no stable allocation exists—any proposed split gives someone an incentive to leave the coalition. The core is empty.",
     icon: AlertTriangle,
     difficulty: 'Advanced',
-    highlight: "Demonstrates coalition instability",
+    highlight: "Demonstrates coalition instability when the core is empty",
     participants: [
       { id: 1, name: "Party A", independentCost: 10 },
       { id: 2, name: "Party B", independentCost: 10 },

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Lightbulb, GitBranch, Scale, Award, ChevronRight, Puzzle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import Glossary from "./Glossary";
+import Glossary, { GlossaryTermLink } from "./Glossary";
 
 const GameTheoryBackground = () => {
   const concepts = [
@@ -10,7 +10,11 @@ const GameTheoryBackground = () => {
       icon: <GitBranch className="w-6 h-6" />,
       title: "Cooperative Games",
       subtitle: "Coalition Formation",
-      content: "In cooperative game theory, players can form binding agreements. A coalition is any subset of players who agree to work together. The key question is how to fairly divide the gains (or costs) from cooperation.",
+      content: (
+        <>
+          In cooperative game theory, players can form binding agreements. A <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink> is any subset of players who agree to work together. The key question is how to fairly divide the gains (or costs) from cooperation.
+        </>
+      ),
       examples: [
         "Water resource projects with multiple beneficiaries",
         "Shared infrastructure costs",
@@ -21,7 +25,11 @@ const GameTheoryBackground = () => {
       icon: <Scale className="w-6 h-6" />,
       title: "The Core",
       subtitle: "Stability Concept",
-      content: "The core is the set of all allocations where no group of players would prefer to break away and form their own coalition. An allocation is in the core if every coalition receives at least as much value as it could achieve on its own.",
+      content: (
+        <>
+          <GlossaryTermLink term="The Core">The core</GlossaryTermLink> is the set of all allocations where no group of players would prefer to break away and form their own coalition. An allocation is in the core if every <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink> receives at least as much value as it could achieve on its own.
+        </>
+      ),
       examples: [
         "Ensures no participant is exploited",
         "Guarantees coalition stability",
@@ -32,7 +40,11 @@ const GameTheoryBackground = () => {
       icon: <Award className="w-6 h-6" />,
       title: "Shapley Value",
       subtitle: "Unique Fair Solution",
-      content: "The Shapley value assigns each player their average marginal contribution across all possible orderings of coalition formation. It satisfies axioms of efficiency, symmetry, additivity, and null player.",
+      content: (
+        <>
+          <GlossaryTermLink term="Shapley Value">The Shapley value</GlossaryTermLink> assigns each player their average <GlossaryTermLink term="Marginal Contribution">marginal contribution</GlossaryTermLink> across all possible orderings of coalition formation. It satisfies axioms of efficiency, symmetry, additivity, and null player.
+        </>
+      ),
       examples: [
         "Named after Lloyd Shapley (Nobel Prize 2012)",
         "Always exists and is unique",
@@ -43,7 +55,11 @@ const GameTheoryBackground = () => {
       icon: <Puzzle className="w-6 h-6" />,
       title: "Nucleolus",
       subtitle: "Maximum Fairness",
-      content: "The nucleolus minimizes the maximum dissatisfaction of any coalition. It always lies in the core (when non-empty) and provides a unique, stable solution that treats all players as fairly as possible.",
+      content: (
+        <>
+          <GlossaryTermLink term="Nucleolus">The nucleolus</GlossaryTermLink> minimizes the maximum dissatisfaction (<GlossaryTermLink term="Excess">excess</GlossaryTermLink>) of any coalition. It always lies in <GlossaryTermLink term="The Core">the core</GlossaryTermLink> (when non-empty) and provides a unique, stable solution that treats all players as fairly as possible.
+        </>
+      ),
       examples: [
         "Found by solving linear programs",
         "Always in the core if core exists",
@@ -55,23 +71,43 @@ const GameTheoryBackground = () => {
   const faqs = [
     {
       question: "What's the difference between cooperative and non-cooperative games?",
-      answer: "In cooperative games, players can form binding agreements and coalitions. In non-cooperative games (like the Prisoner's Dilemma), players act independently without binding commitments. Cost allocation problems are typically modeled as cooperative games since participants can negotiate and agree on cost-sharing arrangements.",
+      answer: (
+        <>
+          In cooperative games, players can form binding agreements and <GlossaryTermLink term="Coalition">coalitions</GlossaryTermLink>. In non-cooperative games (like the Prisoner's Dilemma), players act independently without binding commitments. Cost allocation problems are typically modeled as cooperative games since participants can negotiate and agree on cost-sharing arrangements.
+        </>
+      ),
     },
     {
       question: "Why is fair cost allocation important?",
-      answer: "Fair cost allocation ensures that all participants benefit from cooperation. If allocations are perceived as unfair, participants may refuse to cooperate or leave the coalition, leading to inefficient outcomes. Game theory provides rigorous methods to determine what 'fair' means mathematically.",
+      answer: (
+        <>
+          Fair cost allocation ensures that all participants benefit from cooperation. If allocations are perceived as unfair, participants may refuse to cooperate or leave the <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink>, leading to inefficient outcomes. Game theory provides rigorous methods to determine what 'fair' means mathematically through concepts like <GlossaryTermLink term="The Core">the core</GlossaryTermLink> and <GlossaryTermLink term="Shapley Value">Shapley value</GlossaryTermLink>.
+        </>
+      ),
     },
     {
       question: "What makes a cost game subadditive?",
-      answer: "A cost game is subadditive when c(S ∪ T) ≤ c(S) + c(T) for any two non-overlapping coalitions S and T. This means forming larger coalitions never costs more than operating separately—a prerequisite for beneficial cooperation. Subadditivity arises from economies of scale, shared resources, or avoided redundancy.",
+      answer: (
+        <>
+          A cost game is <GlossaryTermLink term="Subadditive">subadditive</GlossaryTermLink> when c(S ∪ T) ≤ c(S) + c(T) for any two non-overlapping <GlossaryTermLink term="Coalition">coalitions</GlossaryTermLink> S and T. This means forming larger coalitions never costs more than operating separately—a prerequisite for beneficial cooperation. Subadditivity arises from economies of scale, shared resources, or avoided redundancy.
+        </>
+      ),
     },
     {
       question: "Can the core be empty?",
-      answer: "Yes, some games have an empty core, meaning no allocation satisfies all coalition rationality constraints. This occurs when the benefits of the grand coalition are relatively small compared to what sub-coalitions can achieve. The MCRS method addresses this by relaxing bounds until a solution exists.",
+      answer: (
+        <>
+          Yes, some games have an empty <GlossaryTermLink term="The Core">core</GlossaryTermLink>, meaning no allocation satisfies all <GlossaryTermLink term="Coalition Rationality">coalition rationality</GlossaryTermLink> constraints. This occurs when the benefits of the <GlossaryTermLink term="Grand Coalition">grand coalition</GlossaryTermLink> are relatively small compared to what sub-coalitions can achieve. The <GlossaryTermLink term="MCRS Method">MCRS method</GlossaryTermLink> addresses this by relaxing bounds until a solution exists.
+        </>
+      ),
     },
     {
       question: "How does SCRB differ from MCRS?",
-      answer: "SCRB (Separable Costs, Remaining Benefits) uses nominal bounds based only on individual and grand coalition costs. MCRS (Minimum Costs, Remaining Savings) considers all intermediate coalitions to find the true core boundaries. This makes MCRS more accurate but computationally more demanding for large games.",
+      answer: (
+        <>
+          <GlossaryTermLink term="SCRB Method">SCRB (Separable Costs, Remaining Benefits)</GlossaryTermLink> uses nominal bounds based only on individual and <GlossaryTermLink term="Grand Coalition">grand coalition</GlossaryTermLink> costs. <GlossaryTermLink term="MCRS Method">MCRS (Minimum Costs, Remaining Savings)</GlossaryTermLink> considers all intermediate coalitions to find the true <GlossaryTermLink term="The Core">core</GlossaryTermLink> boundaries. This makes MCRS more accurate but computationally more demanding for large games.
+        </>
+      ),
     },
   ];
 
@@ -131,9 +167,9 @@ const GameTheoryBackground = () => {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <p className="text-muted-foreground leading-relaxed">
+                  <div className="text-muted-foreground leading-relaxed">
                     {concept.content}
-                  </p>
+                  </div>
                   <div className="space-y-2">
                     {concept.examples.map((example, i) => (
                       <div key={i} className="flex items-center gap-2 text-sm">
