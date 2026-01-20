@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Triangle, Target, Info } from "lucide-react";
+import { Triangle, Target, Info, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 interface HoveredPoint {
   type: 'scrb' | 'shapley' | 'centroid';
@@ -220,6 +221,110 @@ const CoreVisualization = ({
     return `M ${v[0].x} ${v[0].y} ${v.slice(1).map(p => `L ${p.x} ${p.y}`).join(' ')} Z`;
   }, [coreConstraints.vertices]);
 
+  // Calculate constraint boundary lines
+  const constraintLines = useMemo(() => {
+    const C = grandCoalitionCost;
+    if (C === 0) return [];
+
+    const c1 = participants[0]?.independentCost ?? 0;
+    const c2 = participants[1]?.independentCost ?? 0;
+    const c3 = participants[2]?.independentCost ?? 0;
+    
+    const c12 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(1) && 
+      c.participants.includes(2)
+    )?.cost ?? c1 + c2;
+    
+    const c13 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(1) && 
+      c.participants.includes(3)
+    )?.cost ?? c1 + c3;
+    
+    const c23 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(2) && 
+      c.participants.includes(3)
+    )?.cost ?? c2 + c3;
+
+    const lines: { 
+      x1: number; y1: number; x2: number; y2: number; 
+      label: string; 
+      type: 'individual' | 'coalition';
+      color: string;
+    }[] = [];
+
+    // Helper to get line endpoints for a constraint on the simplex
+    // For x_i = bound, we need to find where this intersects the simplex (x1 + x2 + x3 = C)
+    
+    // Individual constraint x1 = c1 (line parallel to edge BC)
+    if (c1 < C && c1 > 0) {
+      const x1 = c1;
+      // x2 ranges from 0 to C - c1, x3 = C - c1 - x2
+      const p1 = allocationToBarycentric([x1, 0, C - x1]);
+      const p2 = allocationToBarycentric([x1, C - x1, 0]);
+      const pt1 = barycentricToCartesian(p1);
+      const pt2 = barycentricToCartesian(p2);
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁ ≤ ${c1}`, type: 'individual', color: 'hsl(var(--chart-1))' });
+    }
+
+    // Individual constraint x2 = c2 (line parallel to edge AC)
+    if (c2 < C && c2 > 0) {
+      const x2 = c2;
+      const p1 = allocationToBarycentric([0, x2, C - x2]);
+      const p2 = allocationToBarycentric([C - x2, x2, 0]);
+      const pt1 = barycentricToCartesian(p1);
+      const pt2 = barycentricToCartesian(p2);
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂ ≤ ${c2}`, type: 'individual', color: 'hsl(var(--chart-2))' });
+    }
+
+    // Individual constraint x3 = c3 (line parallel to edge AB)
+    if (c3 < C && c3 > 0) {
+      const x3 = c3;
+      const p1 = allocationToBarycentric([0, C - x3, x3]);
+      const p2 = allocationToBarycentric([C - x3, 0, x3]);
+      const pt1 = barycentricToCartesian(p1);
+      const pt2 = barycentricToCartesian(p2);
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₃ ≤ ${c3}`, type: 'individual', color: 'hsl(var(--chart-3))' });
+    }
+
+    // Coalition constraint x1 + x2 = c12 → x3 = C - c12
+    if (c12 < C && C - c12 > 0) {
+      const x3 = C - c12;
+      const p1 = allocationToBarycentric([0, C - x3, x3]);
+      const p2 = allocationToBarycentric([C - x3, 0, x3]);
+      const pt1 = barycentricToCartesian(p1);
+      const pt2 = barycentricToCartesian(p2);
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₂ ≤ ${c12}`, type: 'coalition', color: 'hsl(var(--chart-4))' });
+    }
+
+    // Coalition constraint x1 + x3 = c13 → x2 = C - c13
+    if (c13 < C && C - c13 > 0) {
+      const x2 = C - c13;
+      const p1 = allocationToBarycentric([0, x2, C - x2]);
+      const p2 = allocationToBarycentric([C - x2, x2, 0]);
+      const pt1 = barycentricToCartesian(p1);
+      const pt2 = barycentricToCartesian(p2);
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₃ ≤ ${c13}`, type: 'coalition', color: 'hsl(var(--chart-5))' });
+    }
+
+    // Coalition constraint x2 + x3 = c23 → x1 = C - c23
+    if (c23 < C && C - c23 > 0) {
+      const x1 = C - c23;
+      const p1 = allocationToBarycentric([x1, 0, C - x1]);
+      const p2 = allocationToBarycentric([x1, C - x1, 0]);
+      const pt1 = barycentricToCartesian(p1);
+      const pt2 = barycentricToCartesian(p2);
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂+x₃ ≤ ${c23}`, type: 'coalition', color: 'hsl(var(--accent))' });
+    }
+
+    return lines;
+  }, [participants, coalitions, grandCoalitionCost, allocationToBarycentric, barycentricToCartesian]);
+
+  // State for showing constraint labels
+  const [showConstraints, setShowConstraints] = useState(true);
+
   return (
     <Card className="card-elevated">
       <CardHeader>
@@ -274,6 +379,38 @@ const CoreVisualization = ({
               stroke="hsl(var(--primary))"
               strokeWidth="2"
             />
+
+            {/* Constraint boundary lines */}
+            {showConstraints && constraintLines.map((line, i) => (
+              <motion.g
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
+              >
+                <line
+                  x1={line.x1}
+                  y1={line.y1}
+                  x2={line.x2}
+                  y2={line.y2}
+                  stroke={line.color}
+                  strokeWidth="1.5"
+                  strokeDasharray={line.type === 'individual' ? "4 2" : "8 4"}
+                  opacity="0.7"
+                />
+                {/* Label at midpoint */}
+                <text
+                  x={(line.x1 + line.x2) / 2 + (i % 2 === 0 ? 8 : -8)}
+                  y={(line.y1 + line.y2) / 2 + (i < 3 ? -6 : 12)}
+                  textAnchor="middle"
+                  className="text-[9px] font-mono"
+                  fill={line.color}
+                  opacity="0.9"
+                >
+                  {line.label}
+                </text>
+              </motion.g>
+            ))}
 
             {/* Core region */}
             {coreConstraints.isFeasible && (
@@ -451,24 +588,57 @@ const CoreVisualization = ({
           </svg>
         </div>
 
-        {/* Legend */}
-        <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded border-2 border-interactive bg-interactive/20" />
-            <span className="text-muted-foreground">Core Region</span>
+        {/* Controls and Legend */}
+        <div className="mt-6 flex flex-col gap-4">
+          {/* Toggle constraints button */}
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConstraints(!showConstraints)}
+              className="text-xs"
+            >
+              {showConstraints ? <EyeOff className="w-3 h-3 mr-1" /> : <Eye className="w-3 h-3 mr-1" />}
+              {showConstraints ? 'Hide' : 'Show'} Constraints
+            </Button>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-primary" />
-            <span className="text-muted-foreground">SCRB Method</span>
+
+          {/* Legend */}
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded border-2 border-interactive bg-interactive/20" />
+              <span className="text-muted-foreground">Core Region</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-primary" />
+              <span className="text-muted-foreground">SCRB Method</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-interactive" />
+              <span className="text-muted-foreground">Shapley Value</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-muted-foreground/50" />
+              <span className="text-muted-foreground">Equal Split</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-interactive" />
-            <span className="text-muted-foreground">Shapley Value</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-muted-foreground/50" />
-            <span className="text-muted-foreground">Equal Split</span>
-          </div>
+
+          {/* Constraint lines legend */}
+          {showConstraints && (
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+              <p className="text-xs font-medium mb-2 text-foreground">Constraint Boundaries</p>
+              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0 border-t-2 border-dashed" style={{ borderColor: 'hsl(var(--chart-1))' }} />
+                  <span>Individual (xᵢ ≤ cᵢ)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-6 h-0 border-t-2" style={{ borderColor: 'hsl(var(--chart-4))', borderStyle: 'dashed', borderSpacing: '8px' }} />
+                  <span>Coalition (xᵢ+xⱼ ≤ cᵢⱼ)</span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Core status */}
