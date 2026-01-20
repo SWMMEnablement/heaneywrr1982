@@ -1,8 +1,8 @@
 import { motion } from "framer-motion";
-import { GitCompare, ArrowRight, ArrowUp, ArrowDown, Minus } from "lucide-react";
+import { GitCompare, ArrowRight, ArrowUp, ArrowDown, Minus, TrendingUp, BarChart3, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
+import { useMemo } from "react";
 type MethodType = 'scrb' | 'shapley' | 'nucleolus' | 'equal';
 
 interface Participant {
@@ -62,6 +62,40 @@ const CompareChart = ({
   const differences = participants.map((_, i) => method1Values[i] - method2Values[i]);
   const maxAbsDiff = Math.max(...differences.map(d => Math.abs(d)), 0.01);
 
+  // Summary statistics
+  const summaryStats = useMemo(() => {
+    const absDifferences = differences.map(d => Math.abs(d));
+    const totalVariance = absDifferences.reduce((a, b) => a + b, 0);
+    const avgDifference = totalVariance / participants.length;
+    const maxDifference = Math.max(...absDifferences);
+    
+    // Determine which method favors each participant (lower cost = favorable)
+    const participantFavorability = participants.map((p, i) => {
+      const diff = differences[i];
+      if (Math.abs(diff) < 0.01) return { participant: p.name, favoredMethod: 'equal' as const, savings: 0 };
+      // Positive diff means method1 is higher, so method2 is favorable
+      // Negative diff means method1 is lower, so method1 is favorable
+      return {
+        participant: p.name,
+        favoredMethod: diff > 0 ? compareMethod2 : compareMethod1,
+        savings: Math.abs(diff)
+      };
+    });
+
+    const method1FavorCount = participantFavorability.filter(f => f.favoredMethod === compareMethod1).length;
+    const method2FavorCount = participantFavorability.filter(f => f.favoredMethod === compareMethod2).length;
+    const equalCount = participantFavorability.filter(f => f.favoredMethod === 'equal').length;
+
+    return {
+      totalVariance,
+      avgDifference,
+      maxDifference,
+      participantFavorability,
+      method1FavorCount,
+      method2FavorCount,
+      equalCount
+    };
+  }, [differences, participants, compareMethod1, compareMethod2]);
   return (
     <div className="space-y-6">
       {/* Method Selectors */}
@@ -217,6 +251,109 @@ const CompareChart = ({
           </span>
         </div>
       </div>
+
+      {/* Summary Statistics Panel */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
+        className="rounded-lg border border-border overflow-hidden"
+      >
+        <div className="bg-gradient-to-r from-interactive/10 to-accent/10 px-4 py-3 border-b border-border">
+          <h4 className="font-medium text-sm flex items-center gap-2">
+            <BarChart3 className="w-4 h-4 text-accent" />
+            Summary Statistics
+          </h4>
+        </div>
+        
+        {/* Key Metrics */}
+        <div className="grid grid-cols-3 divide-x divide-border">
+          <div className="p-4 text-center">
+            <div className="text-xs text-muted-foreground mb-1">Total Variance</div>
+            <div className="text-xl font-bold font-mono text-primary">
+              {summaryStats.totalVariance.toFixed(2)}
+            </div>
+          </div>
+          <div className="p-4 text-center">
+            <div className="text-xs text-muted-foreground mb-1">Avg Difference</div>
+            <div className="text-xl font-bold font-mono text-interactive">
+              {summaryStats.avgDifference.toFixed(2)}
+            </div>
+          </div>
+          <div className="p-4 text-center">
+            <div className="text-xs text-muted-foreground mb-1">Max Difference</div>
+            <div className="text-xl font-bold font-mono text-accent">
+              {summaryStats.maxDifference.toFixed(2)}
+            </div>
+          </div>
+        </div>
+
+        {/* Method Favorability Summary */}
+        <div className="border-t border-border p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Users className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Method Favorability</span>
+            <span className="text-xs text-muted-foreground ml-auto">(Lower cost = More favorable)</span>
+          </div>
+          
+          <div className="flex gap-4 mb-4">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: methodColors[compareMethod1] }} />
+              <span className="text-sm font-medium">{methodLabels[compareMethod1]}</span>
+              <span className="text-xs bg-background px-2 py-0.5 rounded-full font-mono">
+                {summaryStats.method1FavorCount} participant{summaryStats.method1FavorCount !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30">
+              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: methodColors[compareMethod2] }} />
+              <span className="text-sm font-medium">{methodLabels[compareMethod2]}</span>
+              <span className="text-xs bg-background px-2 py-0.5 rounded-full font-mono">
+                {summaryStats.method2FavorCount} participant{summaryStats.method2FavorCount !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {summaryStats.equalCount > 0 && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/30">
+                <Minus className="w-3 h-3 text-muted-foreground" />
+                <span className="text-sm">Equal</span>
+                <span className="text-xs bg-background px-2 py-0.5 rounded-full font-mono">
+                  {summaryStats.equalCount}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Per-participant favorability */}
+          <div className="space-y-2">
+            {summaryStats.participantFavorability.map((pf, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.05 }}
+                className="flex items-center gap-3 text-sm"
+              >
+                <span className="w-28 truncate font-medium">{pf.participant}</span>
+                <TrendingUp className="w-3 h-3 text-muted-foreground" />
+                {pf.favoredMethod === 'equal' ? (
+                  <span className="text-muted-foreground italic">No significant difference</span>
+                ) : (
+                  <>
+                    <span 
+                      className="font-medium"
+                      style={{ color: methodColors[pf.favoredMethod] }}
+                    >
+                      {methodLabels[pf.favoredMethod]}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      saves <span className="font-mono text-interactive">{pf.savings.toFixed(2)}</span>
+                    </span>
+                  </>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };
