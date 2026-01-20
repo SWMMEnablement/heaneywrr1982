@@ -5,10 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 
 export interface GlossaryTerm {
   term: string;
@@ -126,7 +126,7 @@ const glossaryTerms: GlossaryTerm[] = [
   },
 ];
 
-// Clickable term component for inline use
+// Hoverable term component for inline use
 interface GlossaryTermLinkProps {
   term: string;
   children?: React.ReactNode;
@@ -142,15 +142,18 @@ export const GlossaryTermLink = ({ term, children }: GlossaryTermLinkProps) => {
   }
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button className="text-interactive underline decoration-dotted underline-offset-2 hover:text-interactive/80 transition-colors cursor-help">
+    <HoverCard openDelay={200} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <button className="text-interactive underline decoration-dotted underline-offset-2 hover:text-interactive/80 transition-colors cursor-help inline">
           {children || term}
         </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
+      </HoverCardTrigger>
+      <HoverCardContent className="w-80 p-0" align="start" side="top">
         <div className="p-4">
-          <h4 className="font-semibold text-foreground mb-2">{glossaryEntry.term}</h4>
+          <div className="flex items-center gap-2 mb-2">
+            <BookText className="w-4 h-4 text-interactive" />
+            <h4 className="font-semibold text-foreground">{glossaryEntry.term}</h4>
+          </div>
           <p className="text-sm text-muted-foreground mb-3">{glossaryEntry.definition}</p>
           {glossaryEntry.formula && (
             <div className="mb-3 p-2 rounded bg-muted/50 font-mono text-xs text-foreground">
@@ -162,9 +165,21 @@ export const GlossaryTermLink = ({ term, children }: GlossaryTermLinkProps) => {
               {glossaryEntry.example}
             </p>
           )}
+          {glossaryEntry.relatedTerms && glossaryEntry.relatedTerms.length > 0 && (
+            <div className="mt-3 pt-2 border-t border-border">
+              <p className="text-[10px] text-muted-foreground mb-1">Related:</p>
+              <div className="flex flex-wrap gap-1">
+                {glossaryEntry.relatedTerms.map((rt) => (
+                  <span key={rt} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+                    {rt}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </PopoverContent>
-    </Popover>
+      </HoverCardContent>
+    </HoverCard>
   );
 };
 
