@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-
+import CoreVisualization from "./CoreVisualization";
 interface Participant {
   id: number;
   name: string;
@@ -343,6 +343,23 @@ const CostCalculator = () => {
             </Card>
           </motion.div>
         </div>
+
+        {/* Core Visualization */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-8"
+        >
+          <CoreVisualization
+            participants={participants}
+            coalitions={coalitions}
+            scrbAllocations={calculations.scrbAllocations}
+            shapleyValues={calculations.shapleyValues}
+            grandCoalitionCost={calculations.grandCoalitionCost}
+          />
+        </motion.div>
       </div>
     </section>
   );
