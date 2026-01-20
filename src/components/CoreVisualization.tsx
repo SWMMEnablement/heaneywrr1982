@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Button } from "@/components/ui/button";
 
 interface HoveredPoint {
-  type: 'scrb' | 'shapley' | 'centroid';
+  type: 'scrb' | 'shapley' | 'centroid' | 'nucleolus';
   x: number;
   y: number;
 }
@@ -185,6 +185,106 @@ const CoreVisualization = ({
 
   // Equal split point (centroid)
   const centroid = barycentricToCartesian([1/3, 1/3, 1/3]);
+
+  // Calculate Nucleolus - minimizes the maximum excess of any coalition
+  const nucleolusValues = useMemo(() => {
+    const n = participants.length;
+    if (n !== 3) return [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
+
+    const c1 = participants[0].independentCost;
+    const c2 = participants[1].independentCost;
+    const c3 = participants[2].independentCost;
+    const C = grandCoalitionCost;
+
+    const c12 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(1) && 
+      c.participants.includes(2)
+    )?.cost ?? c1 + c2;
+    
+    const c13 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(1) && 
+      c.participants.includes(3)
+    )?.cost ?? c1 + c3;
+    
+    const c23 = coalitions.find(c => 
+      c.participants.length === 2 && 
+      c.participants.includes(2) && 
+      c.participants.includes(3)
+    )?.cost ?? c2 + c3;
+
+    // For a 3-player cost game, we can compute the nucleolus analytically
+    // The nucleolus minimizes the maximum excess e(S,x) = c(S) - x(S)
+    // Using an iterative approach to find the lexicographically minimal excess vector
+    
+    // Start from the centroid of the core or equal split
+    let x1 = C / 3;
+    let x2 = C / 3;
+    let x3 = C / 3;
+
+    // Iterative refinement - move towards the center of the core
+    const iterations = 100;
+    const step = 0.01;
+
+    for (let iter = 0; iter < iterations; iter++) {
+      // Calculate excesses for each constraint
+      const excesses = [
+        { type: 'x1', value: c1 - x1 },
+        { type: 'x2', value: c2 - x2 },
+        { type: 'x3', value: c3 - x3 },
+        { type: 'x12', value: c12 - x1 - x2 },
+        { type: 'x13', value: c13 - x1 - x3 },
+        { type: 'x23', value: c23 - x2 - x3 },
+      ];
+
+      // Find the minimum excess (most violated constraint)
+      const minExcess = Math.min(...excesses.map(e => e.value));
+      const tightConstraints = excesses.filter(e => Math.abs(e.value - minExcess) < step * 2);
+
+      // Adjust allocation to balance tight constraints
+      let dx1 = 0, dx2 = 0, dx3 = 0;
+      
+      for (const tc of tightConstraints) {
+        switch (tc.type) {
+          case 'x1': dx1 -= step; break;
+          case 'x2': dx2 -= step; break;
+          case 'x3': dx3 -= step; break;
+          case 'x12': dx1 -= step / 2; dx2 -= step / 2; break;
+          case 'x13': dx1 -= step / 2; dx3 -= step / 2; break;
+          case 'x23': dx2 -= step / 2; dx3 -= step / 2; break;
+        }
+      }
+
+      // Normalize to maintain efficiency (sum = C)
+      const total = dx1 + dx2 + dx3;
+      dx1 -= total / 3;
+      dx2 -= total / 3;
+      dx3 -= total / 3;
+
+      x1 += dx1;
+      x2 += dx2;
+      x3 += dx3;
+
+      // Project back to simplex
+      const sum = x1 + x2 + x3;
+      x1 = x1 * C / sum;
+      x2 = x2 * C / sum;
+      x3 = x3 * C / sum;
+
+      // Ensure non-negativity
+      x1 = Math.max(0, x1);
+      x2 = Math.max(0, x2);
+      x3 = Math.max(0, x3);
+    }
+
+    return [x1, x2, x3];
+  }, [participants, coalitions, grandCoalitionCost]);
+
+  const nucleolusPoint = useMemo(() => {
+    const bary = allocationToBarycentric(nucleolusValues);
+    return barycentricToCartesian(bary);
+  }, [nucleolusValues]);
 
   // Generate grid lines for the simplex
   const gridLines = useMemo(() => {
@@ -517,6 +617,35 @@ const CoreVisualization = ({
               </text>
             </motion.g>
 
+            {/* Nucleolus allocation point */}
+            <motion.g
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.9, type: "spring" }}
+              style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHoveredPoint({ type: 'nucleolus', x: nucleolusPoint.x, y: nucleolusPoint.y })}
+              onMouseLeave={() => setHoveredPoint(null)}
+            >
+              <circle
+                cx={nucleolusPoint.x}
+                cy={nucleolusPoint.y}
+                r={hoveredPoint?.type === 'nucleolus' ? 10 : 8}
+                fill="hsl(var(--accent))"
+                stroke="white"
+                strokeWidth="2"
+                filter="url(#glow)"
+                className="transition-all duration-200"
+              />
+              <text
+                x={nucleolusPoint.x + 16}
+                y={nucleolusPoint.y + 4}
+                textAnchor="start"
+                className="text-xs font-medium fill-accent pointer-events-none"
+              >
+                Nucleolus
+              </text>
+            </motion.g>
+
             {/* Axis labels showing percentage */}
             <g className="text-[10px] fill-muted-foreground font-mono">
               <text x={centerX} y={height - 8} textAnchor="middle">Cost share proportions</text>
@@ -545,7 +674,8 @@ const CoreVisualization = ({
                   className="text-xs font-semibold fill-foreground"
                 >
                   {hoveredPoint.type === 'scrb' ? 'SCRB Allocation' : 
-                   hoveredPoint.type === 'shapley' ? 'Shapley Value' : 'Equal Split'}
+                   hoveredPoint.type === 'shapley' ? 'Shapley Value' :
+                   hoveredPoint.type === 'nucleolus' ? 'Nucleolus' : 'Equal Split'}
                 </text>
                 {/* Divider line */}
                 <line
@@ -560,6 +690,7 @@ const CoreVisualization = ({
                 {participants.map((p, i) => {
                   const values = hoveredPoint.type === 'scrb' ? scrbAllocations :
                                  hoveredPoint.type === 'shapley' ? shapleyValues :
+                                 hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                                  [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
                   return (
                     <text
@@ -580,6 +711,7 @@ const CoreVisualization = ({
                 >
                   Total: {(hoveredPoint.type === 'scrb' ? scrbAllocations :
                           hoveredPoint.type === 'shapley' ? shapleyValues :
+                          hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                           [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3])
                           .reduce((a, b) => a + b, 0).toFixed(2)}
                 </text>
@@ -616,6 +748,10 @@ const CoreVisualization = ({
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-interactive" />
               <span className="text-muted-foreground">Shapley Value</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent" />
+              <span className="text-muted-foreground">Nucleolus</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-muted-foreground/50" />
