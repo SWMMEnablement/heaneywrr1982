@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { BookOpen, Users, Target, Lightbulb, Quote, ArrowRight, FileText, ExternalLink, GraduationCap } from "lucide-react";
+import { BookOpen, Users, Target, Lightbulb, Quote, ArrowRight, FileText, ExternalLink, GraduationCap, Library, Landmark, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const PaperDetails = () => {
@@ -348,6 +348,235 @@ const PaperDetails = () => {
                       This paper is recognized for its contribution to cost allocation methods, specifically regarding the <strong>Minimum Cost-Remaining Savings (MCRS)</strong> method (also known as the Separable Costs-Remaining Benefits method). The framework continues to inform modern applications in renewable energy allocation, transboundary water management, and infrastructure cost-sharing.
                     </p>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        </motion.div>
+
+        {/* Further Reading Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+          className="mt-16"
+        >
+          <div className="text-center mb-8">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent text-sm font-medium mb-4">
+              <Library className="w-4 h-4" />
+              Further Reading
+            </span>
+            <h3 className="text-2xl font-serif font-bold text-primary">
+              Foundational Works & Modern Applications
+            </h3>
+            <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
+              Explore the theoretical foundations and cutting-edge applications of cooperative game theory in cost allocation.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Foundational Papers */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Landmark className="w-5 h-5 text-primary" />
+                <h4 className="font-semibold text-foreground">Foundational Papers</h4>
+              </div>
+              <div className="space-y-3">
+                <a
+                  href="https://doi.org/10.1515/9781400881970-018"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className="card-elevated hover:shadow-lg hover:border-primary/30 transition-all duration-300 group">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <BookOpen className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">A Value for n-Person Games</h5>
+                          <p className="text-xs text-muted-foreground mt-1">Lloyd S. Shapley (1953) • Contributions to the Theory of Games II</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">The seminal paper introducing the Shapley value—a fair method to distribute gains among players based on their marginal contributions.</p>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+
+                <a
+                  href="https://press.princeton.edu/books/paperback/9780691130613/games-and-decisions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className="card-elevated hover:shadow-lg hover:border-primary/30 transition-all duration-300 group">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <BookOpen className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">Games and Decisions</h5>
+                          <p className="text-xs text-muted-foreground mt-1">R. Duncan Luce & Howard Raiffa (1957) • Wiley</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">A foundational textbook that brought game theory to a wider audience, covering cooperative games and bargaining theory.</p>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+
+                <a
+                  href="https://doi.org/10.1007/BF01766485"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className="card-elevated hover:shadow-lg hover:border-primary/30 transition-all duration-300 group">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <BookOpen className="w-4 h-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">The Nucleolus of a Characteristic Function Game</h5>
+                          <p className="text-xs text-muted-foreground mt-1">David Schmeidler (1969) • SIAM Journal on Applied Mathematics</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Introduces the nucleolus concept—an allocation that minimizes the maximum dissatisfaction of any coalition.</p>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+              </div>
+            </div>
+
+            {/* Modern Applications */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="w-5 h-5 text-accent" />
+                <h4 className="font-semibold text-foreground">Modern Applications</h4>
+              </div>
+              <div className="space-y-3">
+                <a
+                  href="https://doi.org/10.1016/j.apenergy.2019.113458"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className="card-elevated hover:shadow-lg hover:border-accent/30 transition-all duration-300 group">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
+                          <Zap className="w-4 h-4 text-accent" />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Cost Allocation in Energy Communities</h5>
+                          <p className="text-xs text-muted-foreground mt-1">Applied Energy (2019) • Renewable Energy Sharing</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Uses Shapley values and nucleolus for fair cost/benefit allocation in renewable energy cooperatives and microgrids.</p>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+
+                <a
+                  href="https://doi.org/10.1109/ACCESS.2020.3020119"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className="card-elevated hover:shadow-lg hover:border-accent/30 transition-all duration-300 group">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
+                          <Zap className="w-4 h-4 text-accent" />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Blockchain-Based Cooperative Game Theory</h5>
+                          <p className="text-xs text-muted-foreground mt-1">IEEE Access (2020) • Decentralized Systems</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Applies cooperative game theory to blockchain consensus mechanisms and cryptocurrency reward distribution.</p>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+
+                <a
+                  href="https://doi.org/10.1016/j.ejor.2021.06.025"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  <Card className="card-elevated hover:shadow-lg hover:border-accent/30 transition-all duration-300 group">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
+                          <Zap className="w-4 h-4 text-accent" />
+                        </div>
+                        <div className="flex-1">
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Supply Chain Cost Sharing</h5>
+                          <p className="text-xs text-muted-foreground mt-1">European Journal of Operational Research (2021)</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Modern logistics and supply chain optimization using cooperative game theory for joint procurement and distribution.</p>
+                        </div>
+                        <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Links */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4, delay: 1.0 }}
+            className="mt-8"
+          >
+            <Card className="card-elevated bg-muted/30">
+              <CardContent className="py-5">
+                <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
+                  <span className="text-muted-foreground">Quick Resources:</span>
+                  <a
+                    href="https://en.wikipedia.org/wiki/Shapley_value"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-interactive hover:underline"
+                  >
+                    Shapley Value <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <a
+                    href="https://en.wikipedia.org/wiki/Core_(game_theory)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-interactive hover:underline"
+                  >
+                    Core (Game Theory) <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <a
+                    href="https://en.wikipedia.org/wiki/Nucleolus_(game_theory)"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-interactive hover:underline"
+                  >
+                    Nucleolus <ExternalLink className="w-3 h-3" />
+                  </a>
+                  <a
+                    href="https://en.wikipedia.org/wiki/Cooperative_game_theory"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-interactive hover:underline"
+                  >
+                    Cooperative Game Theory <ExternalLink className="w-3 h-3" />
+                  </a>
                 </div>
               </CardContent>
             </Card>
