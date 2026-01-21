@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
+import { GlossaryTermLink } from "./Glossary";
 
 interface Participant {
   id: number;
@@ -156,8 +157,9 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                 <CollapsibleContent>
                   <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      The Shapley Value calculates each player's <span className="text-foreground font-medium">average marginal contribution</span> across 
-                      all possible orderings. Think of it as: "What do you add to the coalition when you join?"
+                      The <GlossaryTermLink term="Shapley Value">Shapley Value</GlossaryTermLink> calculates each player's{" "}
+                      <span className="text-foreground font-medium">average <GlossaryTermLink term="Marginal Contribution">marginal contribution</GlossaryTermLink></span> across 
+                      all possible orderings. Think of it as: "What do you add to the <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink> when you join?"
                     </p>
                     
                     {shapleySteps.map((step, i) => (
@@ -213,7 +215,8 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                 <CollapsibleContent>
                   <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      SCRB splits the cost into two parts: <span className="text-foreground font-medium">separable costs</span> (what you uniquely bring) 
+                      <GlossaryTermLink term="SCRB Method">SCRB</GlossaryTermLink> splits the cost into two parts:{" "}
+                      <span className="text-foreground font-medium"><GlossaryTermLink term="Separable Cost">separable costs</GlossaryTermLink></span> (what you uniquely bring) 
                       and a <span className="text-foreground font-medium">fair share of joint benefits</span>.
                     </p>
 
@@ -278,17 +281,21 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                 <CollapsibleContent>
                   <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border space-y-4">
                     <p className="text-sm text-muted-foreground">
-                      The Nucleolus finds the allocation that <span className="text-foreground font-medium">minimizes the maximum unhappiness</span> of any coalition. 
+                      The <GlossaryTermLink term="Nucleolus">Nucleolus</GlossaryTermLink> finds the allocation that{" "}
+                      <span className="text-foreground font-medium">minimizes the maximum unhappiness</span> of any <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink>. 
                       It asks: "What's the fairest way to make the angriest group as happy as possible?"
                     </p>
 
                     <div className="p-3 rounded-lg bg-background border border-border space-y-2">
-                      <p className="text-xs font-medium">Key Concept: Excess (unhappiness)</p>
+                      <p className="text-xs font-medium">
+                        Key Concept: <GlossaryTermLink term="Excess">Excess</GlossaryTermLink> (unhappiness)
+                      </p>
                       <p className="font-mono text-sm">
                         e(S) = c(S) - Σx<sub>i</sub> for i ∈ S
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        If e(S) is negative, coalition S is paying MORE than they would alone — they're unhappy!
+                        If e(S) is negative, <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink> S is paying MORE than they would alone — they're unhappy! 
+                        This violates <GlossaryTermLink term="Coalition Rationality">coalition rationality</GlossaryTermLink>.
                       </p>
                     </div>
 

@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { GlossaryTermLink } from "./Glossary";
 
 interface FirstTimeExperienceProps {
   onComplete: () => void;
@@ -161,8 +162,10 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                         <div className="flex items-center gap-3 p-4 rounded-lg bg-interactive/10 border border-interactive/20">
                           <Lightbulb className="w-5 h-5 text-interactive shrink-0" />
                           <p className="text-sm">
-                            <span className="font-medium text-interactive">Game theory</span> gives us 
-                            mathematically principled ways to solve this problem fairly.
+                            <GlossaryTermLink term="Cooperative Games">Cooperative game theory</GlossaryTermLink> gives us 
+                            mathematically principled ways to solve this problem fairly using concepts like{" "}
+                            <GlossaryTermLink term="The Core">the Core</GlossaryTermLink> and{" "}
+                            <GlossaryTermLink term="Shapley Value">the Shapley Value</GlossaryTermLink>.
                           </p>
                         </div>
                       </div>
@@ -253,7 +256,9 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                               </div>
                               <div>
                                 <p className="font-bold text-lg">All Three Together</p>
-                                <p className="text-sm text-muted-foreground">The Grand Coalition</p>
+                                <p className="text-sm text-muted-foreground">
+                                  The <GlossaryTermLink term="Grand Coalition">Grand Coalition</GlossaryTermLink>
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
@@ -294,14 +299,16 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                         <div className="grid gap-3">
                           <p className="text-sm font-medium">Game theorists developed these methods:</p>
                           {[
-                            { name: "SCRB", desc: "Separable costs + fair share of joint benefits", color: "bg-primary" },
-                            { name: "Shapley Value", desc: "Your average contribution across all team orderings", color: "bg-interactive" },
-                            { name: "Nucleolus", desc: "Makes the angriest coalition as happy as possible", color: "bg-accent" },
+                            { name: "SCRB", term: "SCRB Method", desc: "Separable costs + fair share of joint benefits", color: "bg-primary" },
+                            { name: "Shapley Value", term: "Shapley Value", desc: "Your average marginal contribution across all team orderings", color: "bg-interactive" },
+                            { name: "Nucleolus", term: "Nucleolus", desc: "Makes the angriest coalition as happy as possible", color: "bg-accent" },
                           ].map(m => (
                             <div key={m.name} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                               <div className={`w-3 h-3 rounded-full ${m.color}`} />
                               <div>
-                                <p className="font-medium text-sm">{m.name}</p>
+                                <p className="font-medium text-sm">
+                                  <GlossaryTermLink term={m.term}>{m.name}</GlossaryTermLink>
+                                </p>
                                 <p className="text-xs text-muted-foreground">{m.desc}</p>
                               </div>
                             </div>
@@ -332,7 +339,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                             {[
                               { icon: Calculator, title: "Use the Calculator", desc: "Input custom costs and see how different methods divide them" },
                               { icon: Users, title: "Try Example Scenarios", desc: "Load classic game theory problems with pre-set values" },
-                              { icon: DollarSign, title: "Explore the Core", desc: "See which allocations are 'stable'—where no one wants to leave" },
+                              { icon: DollarSign, title: "Explore the Core", desc: "See which allocations are 'stable'—where no coalition wants to leave" },
                             ].map(item => (
                               <div key={item.title} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/50">
                                 <div className="p-2 rounded-lg bg-primary/10">
