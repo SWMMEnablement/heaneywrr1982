@@ -226,3 +226,65 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* Print styles for Cheat Sheet */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Hide everything except cheat sheet content */
+  body > *:not(.print-content) {
+    visibility: hidden;
+  }
+  
+  /* Show dialog content for printing */
+  [role="dialog"] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+  
+  /* Hide overlay */
+  [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+  
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 0.5in;
+  }
+  
+  /* Ensure readable text */
+  * {
+    color: black !important;
+    background: white !important;
+  }
+  
+  /* Keep some colors for visual hierarchy */
+  .print\\:bg-gray-100 {
+    background: #f3f4f6 !important;
+  }
+  
+  .print\\:bg-gray-50 {
+    background: #f9fafb !important;
+  }
+  
+  .print\\:bg-gray-800 {
+    background: #1f2937 !important;
+    color: white !important;
+  }
+}
