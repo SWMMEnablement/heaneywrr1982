@@ -1,9 +1,132 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronRight, ChevronLeft, Droplets, Users, Calculator, Target, Lightbulb, CheckCircle2, Triangle, MousePointer, Move } from "lucide-react";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from "framer-motion";
+import { X, ChevronRight, ChevronLeft, Droplets, Users, Calculator, Target, Lightbulb, CheckCircle2, Triangle, MousePointer, Move, Hand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+
+// Animated Core Demo component showing drag interaction
+const CoreDragDemo = () => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [isInCore, setIsInCore] = useState(true);
+  const [showHint, setShowHint] = useState(true);
+  
+  // Auto-animate on mount to demonstrate drag
+  useEffect(() => {
+    const timer = setTimeout(() => setShowHint(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className="relative w-full h-48 bg-muted/30 rounded-xl border border-border overflow-hidden">
+      {/* Triangle visualization */}
+      <svg viewBox="0 0 200 180" className="w-full h-full">
+        {/* Triangle outline */}
+        <polygon
+          points="100,15 15,165 185,165"
+          fill="none"
+          stroke="hsl(var(--border))"
+          strokeWidth="2"
+        />
+        
+        {/* Core region (shaded) */}
+        <polygon
+          points="100,45 45,130 155,130"
+          fill="hsl(var(--interactive) / 0.15)"
+          stroke="hsl(var(--interactive))"
+          strokeWidth="2"
+          strokeDasharray="4,2"
+        />
+        
+        {/* Constraint lines */}
+        <line x1="30" y1="100" x2="170" y2="100" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity="0.5" />
+        <line x1="60" y1="30" x2="140" y2="150" stroke="hsl(var(--accent))" strokeWidth="1.5" opacity="0.5" />
+        <line x1="140" y1="30" x2="60" y2="150" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.5" />
+        
+        {/* Labels */}
+        <text x="100" y="12" textAnchor="middle" className="text-[8px] fill-muted-foreground">Town A (100%)</text>
+        <text x="10" y="175" textAnchor="start" className="text-[8px] fill-muted-foreground">Town B</text>
+        <text x="190" y="175" textAnchor="end" className="text-[8px] fill-muted-foreground">Town C</text>
+        
+        {/* Core label */}
+        <text x="100" y="95" textAnchor="middle" className="text-[10px] font-medium fill-interactive">Core</text>
+      </svg>
+      
+      {/* Draggable point */}
+      <motion.div
+        drag
+        dragConstraints={{ left: -60, right: 60, top: -40, bottom: 50 }}
+        dragElastic={0.1}
+        onDragStart={() => setIsDragging(true)}
+        onDragEnd={() => setIsDragging(false)}
+        onDrag={(_, info) => {
+          // Check if within core region (simplified check)
+          const inCore = Math.abs(info.offset.x) < 30 && info.offset.y > -20 && info.offset.y < 30;
+          setIsInCore(inCore);
+        }}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing z-10"
+        whileDrag={{ scale: 1.2 }}
+        initial={{ x: 0, y: 0 }}
+      >
+        <motion.div
+          className={`w-6 h-6 rounded-full border-2 shadow-lg flex items-center justify-center text-[8px] font-bold transition-colors ${
+            isInCore 
+              ? "bg-green-500 border-green-600 text-white" 
+              : "bg-red-500 border-red-600 text-white"
+          }`}
+          animate={{
+            scale: isDragging ? 1.1 : [1, 1.1, 1],
+            boxShadow: isInCore 
+              ? "0 0 12px rgba(34, 197, 94, 0.5)" 
+              : "0 0 12px rgba(239, 68, 68, 0.5)"
+          }}
+          transition={{ 
+            scale: { duration: 0.5, repeat: isDragging ? 0 : Infinity, repeatDelay: 1 },
+          }}
+        >
+          S
+        </motion.div>
+      </motion.div>
+      
+      {/* Animated hand cursor hint */}
+      <AnimatePresence>
+        {showHint && (
+          <motion.div
+            initial={{ opacity: 0, x: 20, y: 20 }}
+            animate={{ 
+              opacity: [0, 1, 1, 0],
+              x: [20, 0, -30, -30],
+              y: [20, 0, 20, 20]
+            }}
+            transition={{ 
+              duration: 2.5,
+              times: [0, 0.2, 0.7, 1],
+              repeat: Infinity,
+              repeatDelay: 0.5
+            }}
+            className="absolute left-1/2 top-1/2 pointer-events-none z-20"
+          >
+            <Hand className="w-6 h-6 text-foreground drop-shadow-lg" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Status indicator */}
+      <div className={`absolute bottom-2 left-2 right-2 text-center text-xs font-medium py-1.5 px-2 rounded-lg transition-colors ${
+        isInCore 
+          ? "bg-green-500/20 text-green-700 dark:text-green-400" 
+          : "bg-red-500/20 text-red-700 dark:text-red-400"
+      }`}>
+        {isInCore ? "✓ Shapley is inside the Core (stable!)" : "✗ Outside Core — some coalition would defect!"}
+      </div>
+      
+      {/* Drag instruction */}
+      <div className="absolute top-2 right-2 text-[10px] text-muted-foreground bg-background/80 px-2 py-1 rounded">
+        Drag the "S" point →
+      </div>
+    </div>
+  );
+};
 
 interface OnboardingTourProps {
   open: boolean;
@@ -255,23 +378,29 @@ const OnboardingTour = ({ open, onOpenChange, onComplete }: OnboardingTourProps)
                 )}
 
                 {step.interactiveFeatures && (
-                  <div className="space-y-3 pt-2">
-                    {step.interactiveFeatures.map((feature, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/50"
-                      >
-                        <div className="p-1.5 rounded-md bg-interactive/10 shrink-0">
-                          {feature.icon === 'click' && <MousePointer className="w-4 h-4 text-interactive" />}
-                          {feature.icon === 'drag' && <Move className="w-4 h-4 text-accent" />}
-                          {feature.icon === 'hover' && <Target className="w-4 h-4 text-primary" />}
+                  <div className="space-y-4 pt-2">
+                    {/* Live animated demo */}
+                    <CoreDragDemo />
+                    
+                    {/* Feature list */}
+                    <div className="space-y-2">
+                      {step.interactiveFeatures.map((feature, i) => (
+                        <div
+                          key={i}
+                          className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/50 border border-border/50"
+                        >
+                          <div className="p-1 rounded-md bg-interactive/10 shrink-0">
+                            {feature.icon === 'click' && <MousePointer className="w-3.5 h-3.5 text-interactive" />}
+                            {feature.icon === 'drag' && <Move className="w-3.5 h-3.5 text-accent" />}
+                            {feature.icon === 'hover' && <Target className="w-3.5 h-3.5 text-primary" />}
+                          </div>
+                          <div>
+                            <span className="font-medium text-xs">{feature.title}</span>
+                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{feature.desc}</p>
+                          </div>
                         </div>
-                        <div>
-                          <span className="font-medium text-sm">{feature.title}</span>
-                          <p className="text-xs text-muted-foreground mt-0.5">{feature.desc}</p>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
                 )}
 
