@@ -251,6 +251,66 @@ const GameTheoryBackground = () => {
           </Card>
         </motion.div>
 
+        {/* Why It Matters - Real World Impact */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+          className="mt-16"
+        >
+          <div className="text-center mb-8">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-interactive/10 text-interactive text-sm font-medium mb-4">
+              <Award className="w-4 h-4" />
+              Why It Matters
+            </span>
+            <h3 className="text-2xl font-serif font-bold text-primary">
+              Real-World Applications Today
+            </h3>
+          </div>
+          
+          <Card className="card-elevated bg-gradient-to-br from-interactive/5 via-background to-accent/5 border-interactive/20">
+            <CardContent className="pt-6">
+              <p className="text-center text-muted-foreground leading-relaxed max-w-3xl mx-auto mb-8">
+                These methods aren't just academic exercises—they're used daily to solve real allocation challenges:
+              </p>
+              
+              <div className="grid md:grid-cols-3 gap-6">
+                <div className="text-center p-4 rounded-xl bg-background/50 border border-border">
+                  <div className="text-3xl mb-3">🏗️</div>
+                  <h4 className="font-semibold text-primary mb-2">Shared Infrastructure</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Airports, highways, and water systems use these methods to fairly split construction and maintenance costs among municipalities.
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 rounded-xl bg-background/50 border border-border">
+                  <div className="text-3xl mb-3">⚡</div>
+                  <h4 className="font-semibold text-primary mb-2">Energy Communities</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Renewable energy cooperatives allocate costs for shared solar farms and wind turbines using Shapley and SCRB methods.
+                  </p>
+                </div>
+                
+                <div className="text-center p-4 rounded-xl bg-background/50 border border-border">
+                  <div className="text-3xl mb-3">🌍</div>
+                  <h4 className="font-semibold text-primary mb-2">International Treaties</h4>
+                  <p className="text-sm text-muted-foreground">
+                    Transboundary water treaties and climate agreements use game-theoretic allocation to ensure fair burden-sharing.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mt-8 p-4 rounded-xl bg-primary/5 border border-primary/20 text-center">
+                <p className="text-sm text-muted-foreground italic">
+                  "From the 1982 reservoir paper to today's blockchain cost-sharing protocols, 
+                  the fundamental question remains: <span className="text-primary font-medium">How do we divide costs so everyone agrees to cooperate?</span>"
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
         {/* Interactive Glossary */}
         <Glossary />
       </div>

@@ -1,7 +1,8 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Triangle, Target, Info, Eye, EyeOff, Move, MousePointer, Play, RotateCcw } from "lucide-react";
 import CoreStoryMode from "./CoreStoryMode";
+import ContextualQuizPrompt from "./ContextualQuizPrompt";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -603,9 +604,28 @@ const CoreVisualization = ({
     return !localStorage.getItem('hasSeenCoreOverlay');
   });
   
+  // State for contextual quiz prompt (shows after overlay is dismissed)
+  const [showQuizPrompt, setShowQuizPrompt] = useState(false);
+  const [hasSeenCoreQuiz, setHasSeenCoreQuiz] = useState(() => {
+    return localStorage.getItem('hasSeenCoreQuiz') === 'true';
+  });
+  
   const dismissOverlay = () => {
     setShowOverlay(false);
     localStorage.setItem('hasSeenCoreOverlay', 'true');
+    // Show quiz prompt after a short delay if user hasn't seen it
+    if (!hasSeenCoreQuiz) {
+      setTimeout(() => setShowQuizPrompt(true), 1500);
+    }
+  };
+  
+  const handleQuizComplete = () => {
+    setHasSeenCoreQuiz(true);
+    localStorage.setItem('hasSeenCoreQuiz', 'true');
+  };
+  
+  const handleQuizDismiss = () => {
+    setShowQuizPrompt(false);
   };
 
   return (
@@ -658,6 +678,15 @@ const CoreVisualization = ({
                 </div>
               </div>
             </motion.div>
+          )}
+          
+          {/* Contextual quiz prompt after overlay dismissal */}
+          {showQuizPrompt && !showOverlay && (
+            <ContextualQuizPrompt
+              context="core"
+              onDismiss={handleQuizDismiss}
+              onComplete={handleQuizComplete}
+            />
           )}
         </AnimatePresence>
         <div className="flex justify-center">

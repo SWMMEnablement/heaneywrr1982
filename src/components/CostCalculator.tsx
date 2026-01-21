@@ -31,10 +31,13 @@ interface CoalitionCost {
 
 const CostCalculator = () => {
   const [playerMode, setPlayerMode] = useState<3 | 4>(3);
+  
+  // Three Towns default values (matches the onboarding story)
+  // Riverside=$2M, Hilltop=$4M, Lakeview=$6M, together=$7M
   const [participants, setParticipants] = useState<Participant[]>([
-    { id: 1, name: "Participant 1", independentCost: 2 },
-    { id: 2, name: "Participant 2", independentCost: 4 },
-    { id: 3, name: "Participant 3", independentCost: 6 },
+    { id: 1, name: "Riverside", independentCost: 2 },
+    { id: 2, name: "Hilltop", independentCost: 4 },
+    { id: 3, name: "Lakeview", independentCost: 6 },
   ]);
   
   const [coalitions, setCoalitions] = useState<CoalitionCost[]>([
@@ -55,10 +58,11 @@ const CostCalculator = () => {
   const switchPlayerMode = (mode: 3 | 4) => {
     setPlayerMode(mode);
     if (mode === 3) {
+      // Reset to Three Towns scenario
       setParticipants([
-        { id: 1, name: "Participant 1", independentCost: 2 },
-        { id: 2, name: "Participant 2", independentCost: 4 },
-        { id: 3, name: "Participant 3", independentCost: 6 },
+        { id: 1, name: "Riverside", independentCost: 2 },
+        { id: 2, name: "Hilltop", independentCost: 4 },
+        { id: 3, name: "Lakeview", independentCost: 6 },
       ]);
       setCoalitions([
         { participants: [1, 2], cost: 5 },
@@ -130,10 +134,11 @@ const CostCalculator = () => {
   };
 
   const resetToDefault = () => {
+    // Reset to Three Towns scenario for continuity
     setParticipants([
-      { id: 1, name: "Participant 1", independentCost: 2 },
-      { id: 2, name: "Participant 2", independentCost: 4 },
-      { id: 3, name: "Participant 3", independentCost: 6 },
+      { id: 1, name: "Riverside", independentCost: 2 },
+      { id: 2, name: "Hilltop", independentCost: 4 },
+      { id: 3, name: "Lakeview", independentCost: 6 },
     ]);
     setCoalitions([
       { participants: [1, 2], cost: 5 },
