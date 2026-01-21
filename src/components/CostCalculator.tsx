@@ -17,6 +17,7 @@ import TetrahedronVisualization from "./TetrahedronVisualization";
 import ActiveLearningChallenges from "./ActiveLearningChallenges";
 import FirstTimeExperience from "./FirstTimeExperience";
 import ShowStepsPanel from "./ShowStepsPanel";
+import CheatSheet from "./CheatSheet";
 
 interface Participant {
   id: number;
@@ -375,6 +376,7 @@ const CostCalculator = () => {
               <BookOpen className="w-4 h-4" />
               {showExamples ? 'Hide Examples' : 'Example Scenarios'}
             </Button>
+            <CheatSheet />
           </div>
         </motion.div>
 
