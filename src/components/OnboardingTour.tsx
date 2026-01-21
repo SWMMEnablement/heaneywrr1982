@@ -5,6 +5,155 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 
+// Animated Constraint Click Demo component
+const ConstraintClickDemo = () => {
+  const [selectedLine, setSelectedLine] = useState<string | null>(null);
+  const [showClickHint, setShowClickHint] = useState(true);
+
+  const constraints = [
+    { 
+      id: "blue", 
+      color: "hsl(var(--primary))", 
+      x1: 25, y1: 60, x2: 175, y2: 60,
+      label: "x₁ ≤ 2",
+      explanation: "Riverside won't pay more than $2M (their solo cost)"
+    },
+    { 
+      id: "green", 
+      color: "hsl(var(--interactive))", 
+      x1: 50, y1: 30, x2: 110, y2: 150,
+      label: "x₁+x₂ ≤ 5",
+      explanation: "Riverside + Hilltop won't pay more than $5M together"
+    },
+    { 
+      id: "purple", 
+      color: "hsl(var(--accent))", 
+      x1: 150, y1: 30, x2: 90, y2: 150,
+      label: "x₂+x₃ ≤ 6",
+      explanation: "Hilltop + Lakeview won't pay more than $6M together"
+    },
+  ];
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowClickHint(false), 4000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const selectedConstraint = constraints.find(c => c.id === selectedLine);
+
+  return (
+    <div className="relative w-full h-44 bg-muted/30 rounded-xl border border-border overflow-hidden">
+      <svg viewBox="0 0 200 160" className="w-full h-full">
+        {/* Triangle outline */}
+        <polygon
+          points="100,10 20,150 180,150"
+          fill="none"
+          stroke="hsl(var(--border))"
+          strokeWidth="1.5"
+        />
+        
+        {/* Clickable constraint lines */}
+        {constraints.map((c) => (
+          <g key={c.id}>
+            {/* Invisible wider hit area */}
+            <line
+              x1={c.x1} y1={c.y1} x2={c.x2} y2={c.y2}
+              stroke="transparent"
+              strokeWidth="16"
+              className="cursor-pointer"
+              onClick={() => setSelectedLine(selectedLine === c.id ? null : c.id)}
+            />
+            {/* Visible line */}
+            <motion.line
+              x1={c.x1} y1={c.y1} x2={c.x2} y2={c.y2}
+              stroke={c.color}
+              strokeWidth={selectedLine === c.id ? 4 : 2.5}
+              strokeLinecap="round"
+              className="cursor-pointer"
+              animate={{
+                opacity: selectedLine && selectedLine !== c.id ? 0.3 : 1,
+                filter: selectedLine === c.id ? "drop-shadow(0 0 6px currentColor)" : "none"
+              }}
+              onClick={() => setSelectedLine(selectedLine === c.id ? null : c.id)}
+            />
+            {/* Label */}
+            <text
+              x={c.id === "blue" ? 178 : c.id === "green" ? 42 : 158}
+              y={c.id === "blue" ? 55 : c.id === "green" ? 25 : 25}
+              className={`text-[9px] font-mono transition-opacity ${
+                selectedLine && selectedLine !== c.id ? "opacity-30" : "opacity-100"
+              }`}
+              fill={c.color}
+            >
+              {c.label}
+            </text>
+          </g>
+        ))}
+        
+        {/* Core region hint */}
+        <text x="100" y="95" textAnchor="middle" className="text-[9px] fill-muted-foreground">
+          Click a line!
+        </text>
+      </svg>
+      
+      {/* Animated click cursor hint */}
+      <AnimatePresence>
+        {showClickHint && !selectedLine && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0, 1, 1, 0.5, 1, 1, 0],
+              scale: [1, 1, 0.9, 1, 1, 0.9, 1]
+            }}
+            transition={{ 
+              duration: 3,
+              times: [0, 0.1, 0.2, 0.25, 0.6, 0.7, 1],
+              repeat: Infinity,
+              repeatDelay: 0.5
+            }}
+            className="absolute left-[42%] top-[35%] pointer-events-none z-20"
+          >
+            <MousePointer className="w-5 h-5 text-foreground drop-shadow-lg" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Explanation panel */}
+      <AnimatePresence mode="wait">
+        {selectedConstraint ? (
+          <motion.div
+            key={selectedConstraint.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="absolute bottom-2 left-2 right-2 p-2 rounded-lg bg-background/95 border border-border shadow-lg"
+          >
+            <div className="flex items-start gap-2">
+              <div 
+                className="w-3 h-3 rounded-full shrink-0 mt-0.5"
+                style={{ backgroundColor: selectedConstraint.color }}
+              />
+              <div>
+                <p className="text-[10px] font-mono font-bold">{selectedConstraint.label}</p>
+                <p className="text-[10px] text-muted-foreground">{selectedConstraint.explanation}</p>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute bottom-2 left-2 right-2 text-center text-[10px] text-muted-foreground py-1"
+          >
+            ↑ Click any colored constraint line to see its meaning
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // Animated Core Demo component showing drag interaction
 const CoreDragDemo = () => {
   const [isDragging, setIsDragging] = useState(false);
@@ -18,12 +167,12 @@ const CoreDragDemo = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-48 bg-muted/30 rounded-xl border border-border overflow-hidden">
+    <div className="relative w-full h-44 bg-muted/30 rounded-xl border border-border overflow-hidden">
       {/* Triangle visualization */}
-      <svg viewBox="0 0 200 180" className="w-full h-full">
+      <svg viewBox="0 0 200 160" className="w-full h-full">
         {/* Triangle outline */}
         <polygon
-          points="100,15 15,165 185,165"
+          points="100,10 20,150 180,150"
           fill="none"
           stroke="hsl(var(--border))"
           strokeWidth="2"
@@ -31,7 +180,7 @@ const CoreDragDemo = () => {
         
         {/* Core region (shaded) */}
         <polygon
-          points="100,45 45,130 155,130"
+          points="100,40 50,115 150,115"
           fill="hsl(var(--interactive) / 0.15)"
           stroke="hsl(var(--interactive))"
           strokeWidth="2"
@@ -39,37 +188,36 @@ const CoreDragDemo = () => {
         />
         
         {/* Constraint lines */}
-        <line x1="30" y1="100" x2="170" y2="100" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity="0.5" />
-        <line x1="60" y1="30" x2="140" y2="150" stroke="hsl(var(--accent))" strokeWidth="1.5" opacity="0.5" />
-        <line x1="140" y1="30" x2="60" y2="150" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.5" />
+        <line x1="30" y1="85" x2="170" y2="85" stroke="hsl(var(--primary))" strokeWidth="1.5" opacity="0.5" />
+        <line x1="55" y1="25" x2="125" y2="140" stroke="hsl(var(--accent))" strokeWidth="1.5" opacity="0.5" />
+        <line x1="145" y1="25" x2="75" y2="140" stroke="hsl(var(--muted-foreground))" strokeWidth="1.5" opacity="0.5" />
         
         {/* Labels */}
-        <text x="100" y="12" textAnchor="middle" className="text-[8px] fill-muted-foreground">Town A (100%)</text>
-        <text x="10" y="175" textAnchor="start" className="text-[8px] fill-muted-foreground">Town B</text>
-        <text x="190" y="175" textAnchor="end" className="text-[8px] fill-muted-foreground">Town C</text>
+        <text x="100" y="8" textAnchor="middle" className="text-[8px] fill-muted-foreground">Town A</text>
+        <text x="15" y="158" textAnchor="start" className="text-[8px] fill-muted-foreground">Town B</text>
+        <text x="185" y="158" textAnchor="end" className="text-[8px] fill-muted-foreground">Town C</text>
         
         {/* Core label */}
-        <text x="100" y="95" textAnchor="middle" className="text-[10px] font-medium fill-interactive">Core</text>
+        <text x="100" y="85" textAnchor="middle" className="text-[9px] font-medium fill-interactive">Core</text>
       </svg>
       
       {/* Draggable point */}
       <motion.div
         drag
-        dragConstraints={{ left: -60, right: 60, top: -40, bottom: 50 }}
+        dragConstraints={{ left: -60, right: 60, top: -35, bottom: 45 }}
         dragElastic={0.1}
         onDragStart={() => setIsDragging(true)}
         onDragEnd={() => setIsDragging(false)}
         onDrag={(_, info) => {
-          // Check if within core region (simplified check)
-          const inCore = Math.abs(info.offset.x) < 30 && info.offset.y > -20 && info.offset.y < 30;
+          const inCore = Math.abs(info.offset.x) < 30 && info.offset.y > -20 && info.offset.y < 25;
           setIsInCore(inCore);
         }}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing z-10"
+        className="absolute left-1/2 top-[48%] -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing z-10"
         whileDrag={{ scale: 1.2 }}
         initial={{ x: 0, y: 0 }}
       >
         <motion.div
-          className={`w-6 h-6 rounded-full border-2 shadow-lg flex items-center justify-center text-[8px] font-bold transition-colors ${
+          className={`w-5 h-5 rounded-full border-2 shadow-lg flex items-center justify-center text-[7px] font-bold transition-colors ${
             isInCore 
               ? "bg-green-500 border-green-600 text-white" 
               : "bg-red-500 border-red-600 text-white"
@@ -77,8 +225,8 @@ const CoreDragDemo = () => {
           animate={{
             scale: isDragging ? 1.1 : [1, 1.1, 1],
             boxShadow: isInCore 
-              ? "0 0 12px rgba(34, 197, 94, 0.5)" 
-              : "0 0 12px rgba(239, 68, 68, 0.5)"
+              ? "0 0 10px rgba(34, 197, 94, 0.5)" 
+              : "0 0 10px rgba(239, 68, 68, 0.5)"
           }}
           transition={{ 
             scale: { duration: 0.5, repeat: isDragging ? 0 : Infinity, repeatDelay: 1 },
@@ -92,11 +240,11 @@ const CoreDragDemo = () => {
       <AnimatePresence>
         {showHint && (
           <motion.div
-            initial={{ opacity: 0, x: 20, y: 20 }}
+            initial={{ opacity: 0, x: 15, y: 15 }}
             animate={{ 
               opacity: [0, 1, 1, 0],
-              x: [20, 0, -30, -30],
-              y: [20, 0, 20, 20]
+              x: [15, 0, -25, -25],
+              y: [15, 0, 15, 15]
             }}
             transition={{ 
               duration: 2.5,
@@ -104,20 +252,20 @@ const CoreDragDemo = () => {
               repeat: Infinity,
               repeatDelay: 0.5
             }}
-            className="absolute left-1/2 top-1/2 pointer-events-none z-20"
+            className="absolute left-1/2 top-[48%] pointer-events-none z-20"
           >
-            <Hand className="w-6 h-6 text-foreground drop-shadow-lg" />
+            <Hand className="w-5 h-5 text-foreground drop-shadow-lg" />
           </motion.div>
         )}
       </AnimatePresence>
       
       {/* Status indicator */}
-      <div className={`absolute bottom-2 left-2 right-2 text-center text-xs font-medium py-1.5 px-2 rounded-lg transition-colors ${
+      <div className={`absolute bottom-2 left-2 right-2 text-center text-[10px] font-medium py-1 px-2 rounded-lg transition-colors ${
         isInCore 
           ? "bg-green-500/20 text-green-700 dark:text-green-400" 
           : "bg-red-500/20 text-red-700 dark:text-red-400"
       }`}>
-        {isInCore ? "✓ Shapley is inside the Core (stable!)" : "✗ Outside Core — some coalition would defect!"}
+        {isInCore ? "✓ Stable (inside Core)" : "✗ Unstable — drag back inside!"}
       </div>
       
       {/* Drag instruction */}
@@ -378,26 +526,30 @@ const OnboardingTour = ({ open, onOpenChange, onComplete }: OnboardingTourProps)
                 )}
 
                 {step.interactiveFeatures && (
-                  <div className="space-y-4 pt-2">
-                    {/* Live animated demo */}
-                    <CoreDragDemo />
+                  <div className="space-y-3 pt-2">
+                    {/* Two animated demos side by side */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-[10px] font-medium text-center mb-1.5 text-muted-foreground">Click Constraints</p>
+                        <ConstraintClickDemo />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-medium text-center mb-1.5 text-muted-foreground">Drag Points</p>
+                        <CoreDragDemo />
+                      </div>
+                    </div>
                     
-                    {/* Feature list */}
-                    <div className="space-y-2">
+                    {/* Compact feature hints */}
+                    <div className="flex flex-wrap gap-1.5 justify-center">
                       {step.interactiveFeatures.map((feature, i) => (
                         <div
                           key={i}
-                          className="flex items-start gap-3 p-2.5 rounded-lg bg-muted/50 border border-border/50"
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-muted/50 border border-border/50"
                         >
-                          <div className="p-1 rounded-md bg-interactive/10 shrink-0">
-                            {feature.icon === 'click' && <MousePointer className="w-3.5 h-3.5 text-interactive" />}
-                            {feature.icon === 'drag' && <Move className="w-3.5 h-3.5 text-accent" />}
-                            {feature.icon === 'hover' && <Target className="w-3.5 h-3.5 text-primary" />}
-                          </div>
-                          <div>
-                            <span className="font-medium text-xs">{feature.title}</span>
-                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{feature.desc}</p>
-                          </div>
+                          {feature.icon === 'click' && <MousePointer className="w-3 h-3 text-interactive" />}
+                          {feature.icon === 'drag' && <Move className="w-3 h-3 text-accent" />}
+                          {feature.icon === 'hover' && <Target className="w-3 h-3 text-primary" />}
+                          <span className="text-[10px] font-medium">{feature.title}</span>
                         </div>
                       ))}
                     </div>
