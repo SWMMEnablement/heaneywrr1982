@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Triangle, Target, Info, Eye, EyeOff, Move, MousePointer } from "lucide-react";
+import { Triangle, Target, Info, Eye, EyeOff, Move, MousePointer, Play, RotateCcw } from "lucide-react";
+import CoreStoryMode from "./CoreStoryMode";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -495,6 +496,35 @@ const CoreVisualization = ({
   // State for showing constraint labels
   const [showConstraints, setShowConstraints] = useState(true);
   const [highlightedConstraint, setHighlightedConstraint] = useState<string | null>(null);
+  const [storyModeConstraints, setStoryModeConstraints] = useState<string[]>([]);
+  const [isStoryModeActive, setIsStoryModeActive] = useState(false);
+
+  // Story mode callbacks
+  const handleHighlightConstraints = useCallback((constraints: string[]) => {
+    setIsStoryModeActive(true);
+    setStoryModeConstraints(constraints);
+    setShowConstraints(true);
+  }, []);
+
+  const handleResetHighlights = useCallback(() => {
+    setIsStoryModeActive(false);
+    setStoryModeConstraints([]);
+  }, []);
+
+  // Check if a constraint is highlighted in story mode
+  const isConstraintHighlighted = useCallback((constraintKey: string) => {
+    if (!isStoryModeActive || storyModeConstraints.length === 0) return true;
+    // Map constraint keys: x₁ -> x1, x₁+x₂ -> x12, etc.
+    const normalizedKey = constraintKey
+      .replace(/₁/g, '1')
+      .replace(/₂/g, '2')
+      .replace(/₃/g, '3')
+      .replace(/\+/g, '');
+    return storyModeConstraints.some(sc => {
+      const normalizedSc = sc.replace(/x/g, '');
+      return normalizedKey.includes(normalizedSc) || normalizedSc === normalizedKey.replace(/x/g, '');
+    });
+  }, [isStoryModeActive, storyModeConstraints]);
 
   // Handle constraint click
   const handleConstraintClick = (line: typeof constraintLines[0]) => {
@@ -638,64 +668,74 @@ const CoreVisualization = ({
             />
 
             {/* Constraint boundary lines - clickable */}
-            {showConstraints && constraintLines.map((line, i) => (
-              <motion.g
-                key={i}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 + i * 0.1 }}
-                className="cursor-pointer"
-                onMouseEnter={() => setHighlightedConstraint(line.constraintKey)}
-                onMouseLeave={() => setHighlightedConstraint(null)}
-                onClick={() => handleConstraintClick(line)}
-              >
-                {/* Invisible wider hitbox */}
-                <line
-                  x1={line.x1}
-                  y1={line.y1}
-                  x2={line.x2}
-                  y2={line.y2}
-                  stroke="transparent"
-                  strokeWidth="16"
-                />
-                {/* Visible line */}
-                <line
-                  x1={line.x1}
-                  y1={line.y1}
-                  x2={line.x2}
-                  y2={line.y2}
-                  stroke={line.color}
-                  strokeWidth={highlightedConstraint === line.constraintKey ? 3 : 1.5}
-                  strokeDasharray={line.type === 'individual' ? "4 2" : "8 4"}
-                  opacity={highlightedConstraint === line.constraintKey ? 1 : 0.7}
-                  filter={highlightedConstraint === line.constraintKey ? "url(#glow)" : undefined}
-                  className="transition-all duration-200"
-                />
-                {/* Label at midpoint */}
-                <text
-                  x={(line.x1 + line.x2) / 2 + (i % 2 === 0 ? 8 : -8)}
-                  y={(line.y1 + line.y2) / 2 + (i < 3 ? -6 : 12)}
-                  textAnchor="middle"
-                  className="text-[9px] font-mono pointer-events-none"
-                  fill={line.color}
-                  opacity={highlightedConstraint === line.constraintKey ? 1 : 0.9}
-                  fontWeight={highlightedConstraint === line.constraintKey ? 600 : 400}
+            {showConstraints && constraintLines.map((line, i) => {
+              const isHighlighted = isConstraintHighlighted(line.constraintKey);
+              const isHovered = highlightedConstraint === line.constraintKey;
+              const isStoryHighlight = isStoryModeActive && isHighlighted;
+              
+              return (
+                <motion.g
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ 
+                    opacity: isStoryModeActive ? (isHighlighted ? 1 : 0.15) : 1,
+                    scale: isStoryHighlight ? 1 : 1
+                  }}
+                  transition={{ duration: 0.5, delay: isStoryModeActive ? 0 : 0.2 + i * 0.1 }}
+                  className="cursor-pointer"
+                  onMouseEnter={() => setHighlightedConstraint(line.constraintKey)}
+                  onMouseLeave={() => setHighlightedConstraint(null)}
+                  onClick={() => handleConstraintClick(line)}
                 >
-                  {line.label}
-                </text>
-                {/* Click hint */}
-                {highlightedConstraint === line.constraintKey && (
+                  {/* Invisible wider hitbox */}
+                  <line
+                    x1={line.x1}
+                    y1={line.y1}
+                    x2={line.x2}
+                    y2={line.y2}
+                    stroke="transparent"
+                    strokeWidth="16"
+                  />
+                  {/* Visible line */}
+                  <line
+                    x1={line.x1}
+                    y1={line.y1}
+                    x2={line.x2}
+                    y2={line.y2}
+                    stroke={line.color}
+                    strokeWidth={isHovered || isStoryHighlight ? 4 : 1.5}
+                    strokeDasharray={line.type === 'individual' ? "4 2" : "8 4"}
+                    opacity={isHovered ? 1 : isStoryHighlight ? 0.95 : 0.7}
+                    filter={isHovered || isStoryHighlight ? "url(#strongGlow)" : undefined}
+                    className="transition-all duration-300"
+                  />
+                  {/* Label at midpoint */}
                   <text
-                    x={(line.x1 + line.x2) / 2}
-                    y={(line.y1 + line.y2) / 2 + 24}
+                    x={(line.x1 + line.x2) / 2 + (i % 2 === 0 ? 8 : -8)}
+                    y={(line.y1 + line.y2) / 2 + (i < 3 ? -6 : 12)}
                     textAnchor="middle"
-                    className="text-[8px] fill-muted-foreground pointer-events-none"
+                    className="text-[9px] font-mono pointer-events-none transition-all duration-300"
+                    fill={line.color}
+                    opacity={isHovered || isStoryHighlight ? 1 : 0.9}
+                    fontWeight={isHovered || isStoryHighlight ? 700 : 400}
+                    fontSize={isStoryHighlight ? 11 : 9}
                   >
-                    Click for details
+                    {line.label}
                   </text>
-                )}
-              </motion.g>
-            ))}
+                  {/* Click hint */}
+                  {isHovered && (
+                    <text
+                      x={(line.x1 + line.x2) / 2}
+                      y={(line.y1 + line.y2) / 2 + 24}
+                      textAnchor="middle"
+                      className="text-[8px] fill-muted-foreground pointer-events-none"
+                    >
+                      Click for details
+                    </text>
+                  )}
+                </motion.g>
+              );
+            })}
 
             {/* Core region */}
             {coreConstraints.isFeasible && (
@@ -1068,12 +1108,20 @@ const CoreVisualization = ({
             Points inside the shaded region satisfy all individual and coalition rationality constraints. Drag solution points to see if alternative allocations would be stable.
           </p>
         </div>
+
+        {/* Story Mode - Integrated */}
+        <div className="mt-6">
+          <CoreStoryMode
+            participants={participants}
+            coalitions={coalitions}
+            grandCoalitionCost={grandCoalitionCost}
+            onHighlightConstraints={handleHighlightConstraints}
+            onResetHighlights={handleResetHighlights}
+          />
+        </div>
       </CardContent>
     </Card>
   );
 };
-
-// Import RotateCcw icon for reset button
-import { RotateCcw } from "lucide-react";
 
 export default CoreVisualization;

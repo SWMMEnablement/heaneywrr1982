@@ -4,6 +4,7 @@ import { Play, Pause, SkipBack, SkipForward, ChevronRight, Eye, RotateCcw, Info 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { GlossaryTermLink } from "./Glossary";
 
 interface Participant {
   id: number;
@@ -29,7 +30,7 @@ interface StoryStep {
   title: string;
   description: string;
   constraints: string[];
-  explanation: string;
+  explanationComponent: React.ReactNode;
   color: string;
 }
 
@@ -50,7 +51,12 @@ const CoreStoryMode = ({
       title: "The Full Picture",
       description: "This triangle represents ALL possible ways to divide the grand coalition cost.",
       constraints: [],
-      explanation: "Each corner is a participant getting 100%. Any point inside shows a valid division where the costs sum to the total.",
+      explanationComponent: (
+        <span>
+          Each corner is a participant getting 100%. Any point inside shows a valid division where the costs sum to the total. 
+          This is called an <GlossaryTermLink term="Imputation">imputation</GlossaryTermLink>.
+        </span>
+      ),
       color: "bg-muted-foreground",
     },
     ...participants.map((p, i) => ({
@@ -58,7 +64,12 @@ const CoreStoryMode = ({
       title: `Individual Rationality: ${p.name}`,
       description: `${p.name} won't pay more than ${p.independentCost}—they could just build alone!`,
       constraints: [`x${p.id}`],
-      explanation: `This constraint says: x${p.id} ≤ ${p.independentCost}. Any allocation above this line would make ${p.name} walk away.`,
+      explanationComponent: (
+        <span>
+          This constraint enforces <GlossaryTermLink term="Individual Rationality">individual rationality</GlossaryTermLink>: 
+          x{p.id} ≤ {p.independentCost}. Any allocation above this line would make {p.name} walk away since they'd pay less going solo.
+        </span>
+      ),
       color: i === 0 ? "bg-blue-500" : i === 1 ? "bg-green-500" : "bg-purple-500",
     })),
     ...coalitions
@@ -73,7 +84,12 @@ const CoreStoryMode = ({
           title: `Coalition Rationality: ${names}`,
           description: `Together, they could build for ${c.cost}. So their combined payment can't exceed that.`,
           constraints: [`x${c.participants.join('')}`],
-          explanation: `This constraint says: ${ids} ≤ ${c.cost}. If they're charged more than ${c.cost} together, they'd leave and partner up alone.`,
+          explanationComponent: (
+            <span>
+              This constraint enforces <GlossaryTermLink term="Coalition Rationality">coalition rationality</GlossaryTermLink>: 
+              {ids} ≤ {c.cost}. If they're charged more than {c.cost} together, they'd leave and form their own <GlossaryTermLink term="Coalition">coalition</GlossaryTermLink>.
+            </span>
+          ),
           color: "bg-amber-500",
         };
       }),
@@ -82,7 +98,13 @@ const CoreStoryMode = ({
       title: "The Core!",
       description: "The shaded region is where ALL constraints are satisfied.",
       constraints: ["all"],
-      explanation: "Any allocation in this region is 'stable'—no individual or group would benefit from leaving the grand coalition. This is the Core.",
+      explanationComponent: (
+        <span>
+          Any allocation in this region is 'stable'—no individual or group would benefit from leaving. 
+          This is <GlossaryTermLink term="The Core">the Core</GlossaryTermLink>. 
+          The <GlossaryTermLink term="Excess">excess</GlossaryTermLink> for every coalition is non-negative here.
+        </span>
+      ),
       color: "bg-interactive",
     },
     {
@@ -90,7 +112,13 @@ const CoreStoryMode = ({
       title: "Where Solutions Land",
       description: "SCRB, Shapley, and Nucleolus each pick a specific point.",
       constraints: ["all", "points"],
-      explanation: "Notice: Shapley is sometimes OUTSIDE the Core! It prioritizes 'average contribution' fairness, not stability. SCRB and Nucleolus are designed to always be inside (when the Core exists).",
+      explanationComponent: (
+        <span>
+          Notice: The <GlossaryTermLink term="Shapley Value">Shapley Value</GlossaryTermLink> is sometimes OUTSIDE the Core! 
+          It prioritizes <GlossaryTermLink term="Marginal Contribution">marginal contribution</GlossaryTermLink> fairness, not stability. 
+          The <GlossaryTermLink term="Nucleolus">Nucleolus</GlossaryTermLink> and <GlossaryTermLink term="SCRB Method">SCRB</GlossaryTermLink> are designed to always be inside (when the Core exists).
+        </span>
+      ),
       color: "bg-accent",
     },
   ];
@@ -243,7 +271,7 @@ const CoreStoryMode = ({
               
               <div className="p-3 rounded-lg bg-muted/50 border border-border flex gap-2">
                 <Info className="w-4 h-4 text-interactive mt-0.5 shrink-0" />
-                <p className="text-sm text-muted-foreground">{step.explanation}</p>
+                <p className="text-sm text-muted-foreground">{step.explanationComponent}</p>
               </div>
             </motion.div>
           )}
