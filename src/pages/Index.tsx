@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import Navigation from "@/components/Navigation";
 import HeroSection from "@/components/HeroSection";
+import ExecutiveSummary from "@/components/ExecutiveSummary";
 import CostCalculator from "@/components/CostCalculator";
 import PaperDetails from "@/components/PaperDetails";
 import GameTheoryBackground from "@/components/GameTheoryBackground";
@@ -54,6 +55,8 @@ const Index = () => {
       <div ref={sectionRefs.hero}>
         <HeroSection onNavigate={handleNavigate} />
       </div>
+
+      <ExecutiveSummary />
       
       <div ref={sectionRefs.theory}>
         <GameTheoryBackground />

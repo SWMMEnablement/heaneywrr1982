@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, Pause, SkipBack, SkipForward, ChevronRight, Eye, RotateCcw, Info } from "lucide-react";
+import { Play, SkipBack, SkipForward, ChevronRight, Eye, RotateCcw, Info, HelpCircle, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,13 @@ interface CoreStoryModeProps {
   onResetHighlights: () => void;
 }
 
+interface QuizQuestion {
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
+
 interface StoryStep {
   id: string;
   title: string;
@@ -32,6 +39,7 @@ interface StoryStep {
   constraints: string[];
   explanationComponent: React.ReactNode;
   color: string;
+  quiz?: QuizQuestion;
 }
 
 const CoreStoryMode = ({ 
@@ -43,6 +51,11 @@ const CoreStoryMode = ({
 }: CoreStoryModeProps) => {
   const [currentStep, setCurrentStep] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [quizState, setQuizState] = useState<{
+    answered: boolean;
+    selectedIndex: number | null;
+    showExplanation: boolean;
+  }>({ answered: false, selectedIndex: null, showExplanation: false });
 
   // Build story steps dynamically based on participants
   const storySteps: StoryStep[] = [
@@ -71,10 +84,19 @@ const CoreStoryMode = ({
         </span>
       ),
       color: i === 0 ? "bg-blue-500" : i === 1 ? "bg-green-500" : "bg-purple-500",
+      // Add quiz to first individual rationality step
+      ...(i === 0 ? {
+        quiz: {
+          question: "If a participant is asked to pay MORE than their standalone cost, what will they do?",
+          options: ["Accept it for the greater good", "Leave the coalition", "Negotiate a lower price", "Pay half"],
+          correctIndex: 1,
+          explanation: "They'll leave! This is Individual Rationality—no one will pay more than they'd pay going solo."
+        }
+      } : {})
     })),
     ...coalitions
       .filter(c => c.participants.length === 2)
-      .map(c => {
+      .map((c, i) => {
         const names = c.participants.map(id => 
           participants.find(p => p.id === id)?.name || `Player ${id}`
         ).join(' + ');
@@ -91,6 +113,15 @@ const CoreStoryMode = ({
             </span>
           ),
           color: "bg-amber-500",
+          // Add quiz to first coalition step
+          ...(i === 0 ? {
+            quiz: {
+              question: "Why do we also check constraints for groups of 2 participants?",
+              options: ["It's just extra math", "To ensure no subgroup is overcharged", "For visual symmetry", "Historical tradition"],
+              correctIndex: 1,
+              explanation: "Coalition Rationality ensures no subgroup pays more than they'd pay building together alone—otherwise they'd defect!"
+            }
+          } : {})
         };
       }),
     {
@@ -106,6 +137,12 @@ const CoreStoryMode = ({
         </span>
       ),
       color: "bg-interactive",
+      quiz: {
+        question: "What does it mean if an allocation is 'in the Core'?",
+        options: ["It's the cheapest option", "No one would benefit from leaving", "Everyone pays equally", "It maximizes savings"],
+        correctIndex: 1,
+        explanation: "The Core contains all 'stable' allocations where no individual or coalition would be better off going alone."
+      }
     },
     {
       id: "solutions",
@@ -120,11 +157,27 @@ const CoreStoryMode = ({
         </span>
       ),
       color: "bg-accent",
+      quiz: {
+        question: "The Shapley Value can sometimes be OUTSIDE the Core. Why might this happen?",
+        options: ["Calculation error", "It prioritizes fairness over stability", "It's always inside", "Random chance"],
+        correctIndex: 1,
+        explanation: "Shapley prioritizes marginal contribution fairness, not coalition stability. In some games, what's 'fair' by this measure isn't 'stable'."
+      }
     },
   ];
 
+  const handleQuizAnswer = (index: number) => {
+    if (quizState.answered) return;
+    setQuizState({ answered: true, selectedIndex: index, showExplanation: true });
+  };
+
+  const resetQuizState = () => {
+    setQuizState({ answered: false, selectedIndex: null, showExplanation: false });
+  };
+
   const handleStepChange = (newStep: number) => {
     setCurrentStep(newStep);
+    resetQuizState(); // Reset quiz when changing steps
     
     if (newStep < 0) {
       onResetHighlights();
@@ -273,6 +326,63 @@ const CoreStoryMode = ({
                 <Info className="w-4 h-4 text-interactive mt-0.5 shrink-0" />
                 <p className="text-sm text-muted-foreground">{step.explanationComponent}</p>
               </div>
+
+              {/* Inline Quiz Checkpoint */}
+              {step.quiz && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ delay: 0.3 }}
+                  className="mt-3 p-3 rounded-lg border border-interactive/30 bg-interactive/5"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <HelpCircle className="w-4 h-4 text-interactive" />
+                    <span className="text-xs font-semibold text-interactive uppercase tracking-wide">Quick Check</span>
+                  </div>
+                  <p className="text-sm font-medium mb-2">{step.quiz.question}</p>
+                  <div className="grid gap-1.5">
+                    {step.quiz.options.map((option, idx) => {
+                      const isSelected = quizState.selectedIndex === idx;
+                      const isCorrect = idx === step.quiz!.correctIndex;
+                      const showResult = quizState.answered;
+                      
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleQuizAnswer(idx)}
+                          disabled={quizState.answered}
+                          className={`text-left text-xs p-2 rounded border transition-all ${
+                            showResult
+                              ? isCorrect
+                                ? 'bg-accent/30 border-accent text-accent-foreground'
+                                : isSelected
+                                ? 'bg-destructive/20 border-destructive text-destructive'
+                                : 'border-border opacity-50'
+                              : 'border-border hover:border-interactive hover:bg-interactive/10'
+                          }`}
+                        >
+                          <span className="flex items-center gap-2">
+                            {showResult && isCorrect && <CheckCircle className="w-3.5 h-3.5 text-accent-foreground" />}
+                            {showResult && isSelected && !isCorrect && <XCircle className="w-3.5 h-3.5 text-destructive" />}
+                            {option}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {quizState.showExplanation && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-2 p-2 rounded bg-muted text-xs text-muted-foreground"
+                    >
+                      {quizState.selectedIndex === step.quiz.correctIndex ? "✓ Correct! " : "✗ Not quite. "}
+                      {step.quiz.explanation}
+                    </motion.div>
+                  )}
+                </motion.div>
+              )}
             </motion.div>
           )}
 
