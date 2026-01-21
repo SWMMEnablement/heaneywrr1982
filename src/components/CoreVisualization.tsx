@@ -597,6 +597,16 @@ const CoreVisualization = ({
   };
 
   const hasDragOffsets = Object.values(dragOffsets).some(o => o.x !== 0 || o.y !== 0);
+  
+  // State for first-time overlay
+  const [showOverlay, setShowOverlay] = useState(() => {
+    return !localStorage.getItem('hasSeenCoreOverlay');
+  });
+  
+  const dismissOverlay = () => {
+    setShowOverlay(false);
+    localStorage.setItem('hasSeenCoreOverlay', 'true');
+  };
 
   return (
     <Card className="card-elevated">
@@ -618,6 +628,38 @@ const CoreVisualization = ({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* One-sentence explanatory overlay for first-time users */}
+        <AnimatePresence>
+          {showOverlay && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mb-4 p-4 rounded-xl bg-gradient-to-r from-interactive/15 via-accent/10 to-primary/10 border-2 border-interactive/30 relative"
+            >
+              <button 
+                onClick={dismissOverlay}
+                className="absolute top-2 right-2 text-muted-foreground hover:text-foreground p-1 rounded-full hover:bg-muted/50 transition-colors"
+                aria-label="Dismiss"
+              >
+                ✕
+              </button>
+              <div className="flex gap-3 items-start pr-6">
+                <div className="p-2 rounded-lg bg-interactive/20 shrink-0">
+                  <Target className="w-5 h-5 text-interactive" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground mb-1">What is this diagram?</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    The shaded "<span className="font-semibold text-interactive">Core</span>" region shows all cost splits where{" "}
+                    <span className="text-foreground">no town or pair of towns would be better off building alone</span>.{" "}
+                    <span className="text-muted-foreground/80">Drag the method points to see if they are stable!</span>
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex justify-center">
           <svg 
             width={width} 

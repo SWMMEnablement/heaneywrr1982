@@ -267,6 +267,18 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                             </div>
                           </div>
                         </motion.div>
+
+                        {/* Paper narrative callout */}
+                        <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 flex gap-3">
+                          <div className="text-2xl">📜</div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              <span className="font-medium text-foreground">This exact problem</span> was studied by 
+                              Heaney & Dickinson in their seminal 1982 paper in <em>Water Resources Research</em>. 
+                              They proposed new methods to fix common flaws in traditional cost-sharing approaches.
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     )}
 

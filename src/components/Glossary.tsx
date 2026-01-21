@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookText, X, Search, ChevronRight } from "lucide-react";
+import { BookText, X, Search, ChevronRight, Brain, CheckCircle, XCircle, RotateCcw, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   HoverCard,
   HoverCardContent,
@@ -183,10 +184,199 @@ export const GlossaryTermLink = ({ term, children }: GlossaryTermLinkProps) => {
   );
 };
 
+// Concept Check Quiz component
+const ConceptCheckQuiz = () => {
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [score, setScore] = useState(0);
+  const [questionsAnswered, setQuestionsAnswered] = useState(0);
+
+  // Generate quiz questions from glossary terms
+  const quizQuestions = useMemo(() => {
+    const shuffled = [...glossaryTerms].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 8).map(correctTerm => {
+      // Get 3 random wrong answers
+      const wrongAnswers = glossaryTerms
+        .filter(t => t.term !== correctTerm.term)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3)
+        .map(t => t.term);
+      
+      // Shuffle options
+      const options = [correctTerm.term, ...wrongAnswers].sort(() => Math.random() - 0.5);
+      
+      return {
+        question: correctTerm.definition.length > 100 
+          ? correctTerm.definition.slice(0, 100) + "..." 
+          : correctTerm.definition,
+        fullDefinition: correctTerm.definition,
+        correctAnswer: correctTerm.term,
+        options,
+        formula: correctTerm.formula,
+      };
+    });
+  }, []);
+
+  const currentQuestion = quizQuestions[currentQuestionIndex];
+  const isComplete = currentQuestionIndex >= quizQuestions.length;
+
+  const handleAnswerSelect = (answer: string) => {
+    if (showResult) return;
+    setSelectedAnswer(answer);
+    setShowResult(true);
+    setQuestionsAnswered(prev => prev + 1);
+    if (answer === currentQuestion.correctAnswer) {
+      setScore(prev => prev + 1);
+    }
+  };
+
+  const handleNext = () => {
+    setCurrentQuestionIndex(prev => prev + 1);
+    setSelectedAnswer(null);
+    setShowResult(false);
+  };
+
+  const handleRestart = () => {
+    setCurrentQuestionIndex(0);
+    setSelectedAnswer(null);
+    setShowResult(false);
+    setScore(0);
+    setQuestionsAnswered(0);
+  };
+
+  if (isComplete) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center py-8"
+      >
+        <div className="p-4 rounded-full bg-interactive/20 w-fit mx-auto mb-4">
+          <Sparkles className="w-10 h-10 text-interactive" />
+        </div>
+        <h4 className="text-2xl font-serif font-bold text-primary mb-2">Quiz Complete!</h4>
+        <p className="text-muted-foreground mb-4">
+          You scored <span className="font-bold text-interactive">{score}</span> out of{" "}
+          <span className="font-bold">{questionsAnswered}</span>
+        </p>
+        <div className="w-full bg-muted rounded-full h-3 mb-6 max-w-xs mx-auto">
+          <div 
+            className="bg-interactive h-3 rounded-full transition-all duration-500"
+            style={{ width: `${(score / questionsAnswered) * 100}%` }}
+          />
+        </div>
+        <Button onClick={handleRestart} className="gap-2">
+          <RotateCcw className="w-4 h-4" />
+          Try Again with New Questions
+        </Button>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Progress */}
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">
+          Question {currentQuestionIndex + 1} of {quizQuestions.length}
+        </span>
+        <span className="font-medium text-interactive">
+          Score: {score}/{questionsAnswered}
+        </span>
+      </div>
+      <div className="w-full bg-muted rounded-full h-1.5">
+        <div 
+          className="bg-interactive h-1.5 rounded-full transition-all duration-300"
+          style={{ width: `${((currentQuestionIndex) / quizQuestions.length) * 100}%` }}
+        />
+      </div>
+
+      {/* Question */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentQuestionIndex}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          className="space-y-4"
+        >
+          <div className="p-4 rounded-lg bg-muted/50 border border-border">
+            <p className="text-sm font-medium text-muted-foreground mb-2">
+              Which term matches this definition?
+            </p>
+            <p className="text-foreground leading-relaxed">
+              "{currentQuestion.fullDefinition}"
+            </p>
+            {currentQuestion.formula && (
+              <p className="mt-2 text-xs font-mono text-muted-foreground bg-background/50 p-2 rounded">
+                Hint: {currentQuestion.formula}
+              </p>
+            )}
+          </div>
+
+          {/* Options */}
+          <div className="grid grid-cols-2 gap-2">
+            {currentQuestion.options.map((option) => {
+              const isCorrect = option === currentQuestion.correctAnswer;
+              const isSelected = option === selectedAnswer;
+              
+              let buttonClass = "p-3 rounded-lg border text-left transition-all ";
+              if (showResult) {
+                if (isCorrect) {
+                  buttonClass += "bg-green-500/10 border-green-500/50 text-green-700";
+                } else if (isSelected && !isCorrect) {
+                  buttonClass += "bg-red-500/10 border-red-500/50 text-red-700";
+                } else {
+                  buttonClass += "bg-muted/30 border-border text-muted-foreground opacity-50";
+                }
+              } else {
+                buttonClass += "bg-muted/30 border-border hover:bg-muted/50 hover:border-primary/30 cursor-pointer";
+              }
+
+              return (
+                <button
+                  key={option}
+                  onClick={() => handleAnswerSelect(option)}
+                  disabled={showResult}
+                  className={buttonClass}
+                >
+                  <div className="flex items-center gap-2">
+                    {showResult && isCorrect && <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />}
+                    {showResult && isSelected && !isCorrect && <XCircle className="w-4 h-4 text-red-500 shrink-0" />}
+                    <span className="font-medium text-sm">{option}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Result feedback */}
+          {showResult && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-between items-center pt-2"
+            >
+              <p className={`text-sm font-medium ${selectedAnswer === currentQuestion.correctAnswer ? 'text-green-600' : 'text-red-600'}`}>
+                {selectedAnswer === currentQuestion.correctAnswer ? '✓ Correct!' : `✗ The answer was "${currentQuestion.correctAnswer}"`}
+              </p>
+              <Button size="sm" onClick={handleNext}>
+                {currentQuestionIndex < quizQuestions.length - 1 ? 'Next Question' : 'See Results'}
+              </Button>
+            </motion.div>
+          )}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
+
 // Full glossary section component
 const Glossary = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTerm, setSelectedTerm] = useState<GlossaryTerm | null>(null);
+  const [activeTab, setActiveTab] = useState("glossary");
 
   const filteredTerms = glossaryTerms.filter(
     (term) =>
@@ -216,145 +406,167 @@ const Glossary = () => {
       <div className="text-center mb-8">
         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-4">
           <BookText className="w-4 h-4" />
-          Interactive Glossary
+          Interactive Glossary & Quiz
         </span>
         <h3 className="text-2xl font-serif font-bold text-primary">
           Key Terms & Definitions
         </h3>
         <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
-          Click any term to explore its definition, formula, and examples
+          Learn the terms or test your knowledge with the Concept Check quiz
         </p>
       </div>
 
       <Card className="card-elevated">
         <CardHeader className="pb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search terms..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
+              <TabsTrigger value="glossary" className="gap-2">
+                <BookText className="w-4 h-4" />
+                Glossary
+              </TabsTrigger>
+              <TabsTrigger value="quiz" className="gap-2">
+                <Brain className="w-4 h-4" />
+                Concept Check
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-4">
-            {/* Terms List */}
-            <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-              {filteredTerms.map((term) => (
-                <motion.button
-                  key={term.term}
-                  onClick={() => handleTermClick(term)}
-                  className={`w-full text-left p-3 rounded-lg border transition-all duration-200 ${
-                    selectedTerm?.term === term.term
-                      ? "bg-primary/10 border-primary/30 shadow-sm"
-                      : "bg-muted/30 border-transparent hover:bg-muted/50 hover:border-border"
-                  }`}
-                  whileHover={{ scale: 1.01 }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className={`font-medium ${selectedTerm?.term === term.term ? "text-primary" : "text-foreground"}`}>
-                      {term.term}
-                    </span>
-                    <ChevronRight className={`w-4 h-4 transition-transform ${selectedTerm?.term === term.term ? "rotate-90 text-primary" : "text-muted-foreground"}`} />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                    {term.definition}
-                  </p>
-                </motion.button>
-              ))}
-              {filteredTerms.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">
-                  No terms found matching "{searchQuery}"
-                </p>
-              )}
-            </div>
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsContent value="glossary" className="mt-0">
+              <div className="mb-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search terms..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {/* Terms List */}
+                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+                  {filteredTerms.map((term) => (
+                    <motion.button
+                      key={term.term}
+                      onClick={() => handleTermClick(term)}
+                      className={`w-full text-left p-3 rounded-lg border transition-all duration-200 ${
+                        selectedTerm?.term === term.term
+                          ? "bg-primary/10 border-primary/30 shadow-sm"
+                          : "bg-muted/30 border-transparent hover:bg-muted/50 hover:border-border"
+                      }`}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className={`font-medium ${selectedTerm?.term === term.term ? "text-primary" : "text-foreground"}`}>
+                          {term.term}
+                        </span>
+                        <ChevronRight className={`w-4 h-4 transition-transform ${selectedTerm?.term === term.term ? "rotate-90 text-primary" : "text-muted-foreground"}`} />
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        {term.definition}
+                      </p>
+                    </motion.button>
+                  ))}
+                  {filteredTerms.length === 0 && (
+                    <p className="text-center text-muted-foreground py-8">
+                      No terms found matching "{searchQuery}"
+                    </p>
+                  )}
+                </div>
 
-            {/* Detail Panel */}
-            <div className="border-l border-border pl-4">
-              <AnimatePresence mode="wait">
-                {selectedTerm ? (
-                  <motion.div
-                    key={selectedTerm.term}
-                    initial={{ opacity: 0, x: 10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="space-y-4"
-                  >
-                    <div className="flex items-start justify-between">
-                      <h4 className="text-xl font-semibold text-primary font-serif">
-                        {selectedTerm.term}
-                      </h4>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedTerm(null)}
-                        className="h-8 w-8 p-0"
+                {/* Detail Panel */}
+                <div className="border-l border-border pl-4">
+                  <AnimatePresence mode="wait">
+                    {selectedTerm ? (
+                      <motion.div
+                        key={selectedTerm.term}
+                        initial={{ opacity: 0, x: 10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -10 }}
+                        transition={{ duration: 0.2 }}
+                        className="space-y-4"
                       >
-                        <X className="w-4 h-4" />
-                      </Button>
-                    </div>
-
-                    <p className="text-muted-foreground leading-relaxed">
-                      {selectedTerm.definition}
-                    </p>
-
-                    {selectedTerm.formula && (
-                      <div className="p-3 rounded-lg bg-muted/50 border border-border">
-                        <p className="text-xs text-muted-foreground mb-1">Formula</p>
-                        <p className="font-mono text-sm text-foreground">
-                          {selectedTerm.formula}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedTerm.example && (
-                      <div className="p-3 rounded-lg bg-interactive/5 border-l-2 border-interactive">
-                        <p className="text-xs text-interactive font-medium mb-1">Example</p>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedTerm.example}
-                        </p>
-                      </div>
-                    )}
-
-                    {selectedTerm.relatedTerms && selectedTerm.relatedTerms.length > 0 && (
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-2">Related Terms</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedTerm.relatedTerms.map((relatedTerm) => (
-                            <button
-                              key={relatedTerm}
-                              onClick={() => handleRelatedTermClick(relatedTerm)}
-                              className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                            >
-                              {relatedTerm}
-                            </button>
-                          ))}
+                        <div className="flex items-start justify-between">
+                          <h4 className="text-xl font-semibold text-primary font-serif">
+                            {selectedTerm.term}
+                          </h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedTerm(null)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
-                      </div>
+
+                        <p className="text-muted-foreground leading-relaxed">
+                          {selectedTerm.definition}
+                        </p>
+
+                        {selectedTerm.formula && (
+                          <div className="p-3 rounded-lg bg-muted/50 border border-border">
+                            <p className="text-xs text-muted-foreground mb-1">Formula</p>
+                            <p className="font-mono text-sm text-foreground">
+                              {selectedTerm.formula}
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedTerm.example && (
+                          <div className="p-3 rounded-lg bg-interactive/5 border-l-2 border-interactive">
+                            <p className="text-xs text-interactive font-medium mb-1">Example</p>
+                            <p className="text-sm text-muted-foreground">
+                              {selectedTerm.example}
+                            </p>
+                          </div>
+                        )}
+
+                        {selectedTerm.relatedTerms && selectedTerm.relatedTerms.length > 0 && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-2">Related Terms</p>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedTerm.relatedTerms.map((relatedTerm) => (
+                                <button
+                                  key={relatedTerm}
+                                  onClick={() => handleRelatedTermClick(relatedTerm)}
+                                  className="px-3 py-1 text-xs rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                                >
+                                  {relatedTerm}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex flex-col items-center justify-center h-full py-12 text-center"
+                      >
+                        <BookText className="w-12 h-12 text-muted-foreground/30 mb-4" />
+                        <p className="text-muted-foreground">
+                          Select a term to view its definition
+                        </p>
+                        <p className="text-xs text-muted-foreground/70 mt-1">
+                          Click any term from the list on the left
+                        </p>
+                      </motion.div>
                     )}
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="flex flex-col items-center justify-center h-full py-12 text-center"
-                  >
-                    <BookText className="w-12 h-12 text-muted-foreground/30 mb-4" />
-                    <p className="text-muted-foreground">
-                      Select a term to view its definition
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      Click any term from the list on the left
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
+                  </AnimatePresence>
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="quiz" className="mt-0">
+              <ConceptCheckQuiz />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </motion.div>

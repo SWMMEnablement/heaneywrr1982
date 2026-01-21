@@ -71,24 +71,25 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
 
           <div className="flex flex-wrap justify-center gap-4 mt-10">
             <FeatureCard
-              icon={<Calculator className="w-6 h-6" />}
-              title="Calculator"
-              description="Interactive cost allocation"
-              onClick={() => onNavigate("calculator")}
+              icon={<Lightbulb className="w-6 h-6" />}
+              title="The Problem"
+              description="Start your learning journey"
+              onClick={() => onNavigate("theory")}
               delay={0.3}
+              isPrimary={true}
             />
             <FeatureCard
-              icon={<BookOpen className="w-6 h-6" />}
-              title="Paper Details"
-              description="Key research insights"
-              onClick={() => onNavigate("paper")}
+              icon={<Calculator className="w-6 h-6" />}
+              title="Solutions Lab"
+              description="Interactive cost allocation"
+              onClick={() => onNavigate("calculator")}
               delay={0.4}
             />
             <FeatureCard
-              icon={<Lightbulb className="w-6 h-6" />}
-              title="Game Theory"
-              description="Background concepts"
-              onClick={() => onNavigate("theory")}
+              icon={<BookOpen className="w-6 h-6" />}
+              title="Research"
+              description="Key research insights"
+              onClick={() => onNavigate("paper")}
               delay={0.5}
             />
             <FeatureCard
@@ -121,19 +122,28 @@ interface FeatureCardProps {
   description: string;
   onClick: () => void;
   delay: number;
+  isPrimary?: boolean;
 }
 
-const FeatureCard = ({ icon, title, description, onClick, delay }: FeatureCardProps) => (
+const FeatureCard = ({ icon, title, description, onClick, delay, isPrimary }: FeatureCardProps) => (
   <motion.button
     onClick={onClick}
-    className="group flex items-center gap-4 px-6 py-4 bg-white/10 backdrop-blur-md rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 text-left"
+    className={`group flex items-center gap-4 px-6 py-4 backdrop-blur-md rounded-xl border transition-all duration-300 text-left ${
+      isPrimary 
+        ? "bg-accent/30 border-accent/50 hover:bg-accent/40 ring-2 ring-accent/30"
+        : "bg-white/10 border-white/20 hover:bg-white/20"
+    }`}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay, duration: 0.5 }}
     whileHover={{ scale: 1.02, y: -2 }}
     whileTap={{ scale: 0.98 }}
   >
-    <div className="p-3 rounded-lg bg-accent/20 text-accent group-hover:bg-accent group-hover:text-primary transition-colors">
+    <div className={`p-3 rounded-lg transition-colors ${
+      isPrimary 
+        ? "bg-accent text-primary"
+        : "bg-accent/20 text-accent group-hover:bg-accent group-hover:text-primary"
+    }`}>
       {icon}
     </div>
     <div>
