@@ -21,10 +21,10 @@ const Navigation = ({ activeTab, onNavigate }: NavigationProps) => {
   }, []);
 
   const navItems = [
-    { id: "calculator", label: "Calculator", icon: <Calculator className="w-4 h-4" /> },
-    { id: "paper", label: "Paper Details", icon: <BookOpen className="w-4 h-4" /> },
-    { id: "theory", label: "Game Theory", icon: <Lightbulb className="w-4 h-4" /> },
-    { id: "document", label: "Document", icon: <FileText className="w-4 h-4" /> },
+    { id: "calculator", label: "Solutions", icon: <Calculator className="w-4 h-4" />, subtitle: "Calculator" },
+    { id: "theory", label: "Concepts", icon: <Lightbulb className="w-4 h-4" />, subtitle: "Fairness" },
+    { id: "paper", label: "Research", icon: <BookOpen className="w-4 h-4" />, subtitle: "Paper" },
+    { id: "document", label: "Explore", icon: <FileText className="w-4 h-4" />, subtitle: "Document" },
   ];
 
   const handleNavigate = (tab: string) => {

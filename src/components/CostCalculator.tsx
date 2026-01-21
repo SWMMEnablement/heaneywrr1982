@@ -15,6 +15,8 @@ import ExampleBank, { Scenario } from "./ExampleBank";
 import ParallelCoordinatesChart from "./ParallelCoordinatesChart";
 import TetrahedronVisualization from "./TetrahedronVisualization";
 import ActiveLearningChallenges from "./ActiveLearningChallenges";
+import FirstTimeExperience from "./FirstTimeExperience";
+import ShowStepsPanel from "./ShowStepsPanel";
 
 interface Participant {
   id: number;
@@ -47,6 +49,7 @@ const CostCalculator = () => {
   const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
   const [showTour, setShowTour] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
+  const [showFirstTime, setShowFirstTime] = useState(false);
 
   // Switch player mode
   const switchPlayerMode = (mode: 3 | 4) => {
@@ -86,13 +89,23 @@ const CostCalculator = () => {
     }
   };
 
-  // Check if first visit to show tour
+  // Check if first visit to show tutorial
   useEffect(() => {
-    const hasSeenTour = localStorage.getItem('hasSeenCostCalculatorTour');
-    if (!hasSeenTour) {
-      setShowTour(true);
+    const hasSeenFirstTime = localStorage.getItem('hasSeenFirstTimeExperience');
+    if (!hasSeenFirstTime) {
+      setShowFirstTime(true);
     }
   }, []);
+
+  const handleFirstTimeComplete = () => {
+    localStorage.setItem('hasSeenFirstTimeExperience', 'true');
+    setShowFirstTime(false);
+  };
+
+  const handleFirstTimeSkip = () => {
+    localStorage.setItem('hasSeenFirstTimeExperience', 'true');
+    setShowFirstTime(false);
+  };
 
   const handleTourComplete = () => {
     localStorage.setItem('hasSeenCostCalculatorTour', 'true');
@@ -284,6 +297,14 @@ const CostCalculator = () => {
 
   return (
     <section id="calculator" className="py-20 px-6">
+      {/* First Time Experience - Soft Gate */}
+      {showFirstTime && (
+        <FirstTimeExperience 
+          onComplete={handleFirstTimeComplete}
+          onSkip={handleFirstTimeSkip}
+        />
+      )}
+
       <OnboardingTour 
         open={showTour} 
         onOpenChange={setShowTour} 
@@ -627,6 +648,21 @@ const CostCalculator = () => {
             </Card>
           </motion.div>
         </div>
+
+        {/* Show Steps Panel - How calculations work */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.32 }}
+          className="mt-8"
+        >
+          <ShowStepsPanel
+            participants={participants}
+            coalitions={coalitions}
+            calculations={calculations}
+          />
+        </motion.div>
 
         {/* Bar Chart Visualization */}
         <motion.div
