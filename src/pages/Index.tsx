@@ -55,16 +55,16 @@ const Index = () => {
         <HeroSection onNavigate={handleNavigate} />
       </div>
       
+      <div ref={sectionRefs.theory}>
+        <GameTheoryBackground />
+      </div>
+      
       <div ref={sectionRefs.calculator}>
         <CostCalculator />
       </div>
       
       <div ref={sectionRefs.paper}>
         <PaperDetails />
-      </div>
-      
-      <div ref={sectionRefs.theory}>
-        <GameTheoryBackground />
       </div>
       
       <div ref={sectionRefs.document}>
