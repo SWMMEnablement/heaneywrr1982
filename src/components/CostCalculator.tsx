@@ -398,6 +398,12 @@ const CostCalculator = () => {
                         </th>
                         <th className="py-3 px-2 text-right font-medium">
                           <span className="inline-flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-mcrs" />
+                            MCRS
+                          </span>
+                        </th>
+                        <th className="py-3 px-2 text-right font-medium">
+                          <span className="inline-flex items-center gap-1">
                             <div className="w-2 h-2 rounded-full bg-interactive" />
                             Shapley
                           </span>
@@ -406,6 +412,19 @@ const CostCalculator = () => {
                           <span className="inline-flex items-center gap-1">
                             <div className="w-2 h-2 rounded-full bg-accent" />
                             Nucleolus
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20 cursor-help">
+                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                  Approx
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">
+                                  The Nucleolus uses an iterative heuristic approximation (100 iterations, step=0.01) rather than the exact LP-based formulation. Results are reasonable for the default scenario but may be inaccurate for other inputs.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
                           </span>
                         </th>
                         <th className="py-3 px-2 text-right font-medium">
