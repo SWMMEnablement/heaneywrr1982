@@ -694,6 +694,8 @@ const CoreVisualization = ({
             width={width} 
             height={height} 
             className="overflow-visible cursor-crosshair"
+            role="img"
+            aria-label={`Triangular core diagram for ${participants.map(p => p.name).join(', ')}. The core region shows feasible cost allocations. Drag points to explore allocations interactively.`}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
