@@ -1,6 +1,15 @@
-import { BookOpen, Github, ExternalLink } from "lucide-react";
+import { BookOpen, ExternalLink, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Footer = () => {
+  const handleRestartTutorial = () => {
+    localStorage.removeItem('hasSeenFirstTimeExperience');
+    localStorage.removeItem('hasSeenOnboardingTour');
+    localStorage.removeItem('hasSeenCoreQuiz');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => window.location.reload(), 300);
+  };
+
   return (
     <footer className="bg-primary text-primary-foreground py-12 px-6">
       <div className="container max-w-6xl">
