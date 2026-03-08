@@ -672,6 +672,12 @@ const CostCalculator = () => {
                         animationDuration={800}
                       />
                       <Bar 
+                        dataKey="MCRS" 
+                        fill="hsl(var(--mcrs))" 
+                        radius={[4, 4, 0, 0]}
+                        animationDuration={800}
+                      />
+                      <Bar 
                         dataKey="Shapley" 
                         fill="hsl(var(--interactive))" 
                         radius={[4, 4, 0, 0]}
