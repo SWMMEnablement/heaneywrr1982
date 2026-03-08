@@ -26,6 +26,7 @@ interface ShowStepsPanelProps {
     separableCosts: number[];
     nonseparableCost: number;
     scrbAllocations: number[];
+    mcrsAllocations: number[];
     shapleyValues: number[];
     nucleolusValues: number[];
     grandCoalitionCost: number;
