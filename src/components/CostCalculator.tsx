@@ -488,12 +488,19 @@ const CostCalculator = () => {
                 </div>
 
                 {/* Method Descriptions */}
-                <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-xs text-muted-foreground">
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/5">
                     <div className="w-2 h-2 rounded-full bg-primary mt-1 shrink-0" />
                     <div>
                       <span className="font-medium text-primary">SCRB</span>
                       <p>Separable costs + proportional remaining benefits share</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-mcrs/5">
+                    <div className="w-2 h-2 rounded-full bg-mcrs mt-1 shrink-0" />
+                    <div>
+                      <span className="font-medium text-mcrs">MCRS</span>
+                      <p>Minimum costs + proportional remaining savings (paper's main contribution)</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-interactive/5">
@@ -507,6 +514,10 @@ const CostCalculator = () => {
                     <div className="w-2 h-2 rounded-full bg-accent mt-1 shrink-0" />
                     <div>
                       <span className="font-medium text-accent">Nucleolus</span>
+                      <span className="inline-flex items-center gap-0.5 ml-1 px-1 py-0 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20">
+                        <AlertTriangle className="w-2 h-2" />
+                        Approx
+                      </span>
                       <p>Minimizes maximum coalition dissatisfaction</p>
                     </div>
                   </div>
