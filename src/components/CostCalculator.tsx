@@ -775,6 +775,7 @@ const CostCalculator = () => {
                   <div className="grid grid-cols-2 gap-6">
                     {[
                       { name: 'SCRB', values: calculations.scrbAllocations, color: 'hsl(var(--primary))' },
+                      { name: 'MCRS', values: calculations.mcrsAllocations, color: 'hsl(var(--mcrs))' },
                       { name: 'Shapley', values: calculations.shapleyValues, color: 'hsl(var(--interactive))' },
                       { name: 'Nucleolus', values: calculations.nucleolusValues, color: 'hsl(var(--accent))' },
                       { name: 'Equal Split', values: calculations.equalSplit, color: 'hsl(var(--muted-foreground))' },
