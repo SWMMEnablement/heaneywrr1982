@@ -14,6 +14,7 @@ interface Participant {
 interface CompareChartProps {
   participants: Participant[];
   scrbAllocations: number[];
+  mcrsAllocations: number[];
   shapleyValues: number[];
   nucleolusValues: number[];
   equalSplit: number[];
