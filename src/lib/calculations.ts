@@ -1,3 +1,5 @@
+import { calculateShapleyViaPermutations } from "./steps-helpers";
+
 export interface Participant {
   id: number;
   name: string;
@@ -13,6 +15,7 @@ export interface CalculationResult {
   separableCosts: number[];
   nonseparableCost: number;
   scrbAllocations: number[];
+  mcrsAllocations: number[];
   shapleyValues: number[];
   nucleolusValues: number[];
   equalSplit: number[];
@@ -53,20 +56,52 @@ export function calculateAllocations(
     return separableCosts[i] + share;
   });
 
-  // Shapley Value (simplified for 3 players)
-  const shapleyValues = participants.map((p) => {
-    const c1 = p.independentCost;
-    const c2coalitions = coalitions.filter(c => c.participants.length === 2 && c.participants.includes(p.id));
-    const c2avg = c2coalitions.reduce((sum, c) => {
-      const otherCost = participants.find(op => c.participants.includes(op.id) && op.id !== p.id)?.independentCost ?? 0;
-      return sum + (c.cost - otherCost);
-    }, 0) / Math.max(1, c2coalitions.length);
-
-    const withoutP = coalitions.find(c => c.participants.length === n - 1 && !c.participants.includes(p.id))?.cost ?? 0;
-    const c3 = grandCoalitionCost - withoutP;
-
-    return (c1 + c2avg + c3) / 3;
+  // MCRS Method (Minimum Costs, Remaining Savings)
+  // Step 1: Minimum cost for each participant = min over all coalitions containing i of [c(S) - c(S\{i})]
+  const minimumCosts = participants.map(p => {
+    let minMarginal = p.independentCost; // c({i}) is the standalone marginal
+    
+    // Check all coalitions containing this participant
+    for (const coalition of coalitions) {
+      if (!coalition.participants.includes(p.id)) continue;
+      if (coalition.participants.length < 2) continue;
+      
+      // Find c(S \ {i})
+      const withoutIds = coalition.participants.filter(id => id !== p.id);
+      let costWithout: number;
+      
+      if (withoutIds.length === 1) {
+        costWithout = participants.find(pp => pp.id === withoutIds[0])?.independentCost ?? 0;
+      } else {
+        const withoutCoalition = coalitions.find(c =>
+          c.participants.length === withoutIds.length &&
+          withoutIds.every(id => c.participants.includes(id))
+        );
+        costWithout = withoutCoalition?.cost ?? 0;
+      }
+      
+      const marginal = coalition.cost - costWithout;
+      minMarginal = Math.min(minMarginal, marginal);
+    }
+    
+    return Math.max(0, minMarginal);
   });
+
+  const totalMinimumCosts = minimumCosts.reduce((a, b) => a + b, 0);
+  const remainingSavingsTotal = grandCoalitionCost - totalMinimumCosts;
+
+  // Step 2: Remaining savings allocated proportionally by standalone cost
+  const totalIndependentCostForMCRS = participants.reduce((sum, p) => sum + p.independentCost, 0);
+  
+  const mcrsAllocations = participants.map((p, i) => {
+    const share = totalIndependentCostForMCRS > 0
+      ? (p.independentCost / totalIndependentCostForMCRS) * remainingSavingsTotal
+      : remainingSavingsTotal / n;
+    return minimumCosts[i] + share;
+  });
+
+  // Shapley Value — proper permutation-based calculation
+  const shapleyValues = calculateShapleyViaPermutations(participants, coalitions);
 
   // Nucleolus calculation (for 3 players)
   const nucleolusValues = calculateNucleolus(participants, coalitions, grandCoalitionCost, n);
@@ -83,6 +118,7 @@ export function calculateAllocations(
     separableCosts,
     nonseparableCost,
     scrbAllocations,
+    mcrsAllocations,
     shapleyValues,
     nucleolusValues,
     equalSplit,
