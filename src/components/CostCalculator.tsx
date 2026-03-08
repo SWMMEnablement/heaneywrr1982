@@ -828,11 +828,13 @@ const CostCalculator = () => {
                 ) : chartMode === 'radar' ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {participants.map((p, i) => {
+                      const fullMark = Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.mcrsAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j])));
                       const radarData = [
-                        { method: 'SCRB', value: Number(calculations.scrbAllocations[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
-                        { method: 'Shapley', value: Number(calculations.shapleyValues[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
-                        { method: 'Nucleolus', value: Number(calculations.nucleolusValues[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
-                        { method: 'Equal Split', value: Number(calculations.equalSplit[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
+                        { method: 'SCRB', value: Number(calculations.scrbAllocations[i].toFixed(2)), fullMark },
+                        { method: 'MCRS', value: Number(calculations.mcrsAllocations[i].toFixed(2)), fullMark },
+                        { method: 'Shapley', value: Number(calculations.shapleyValues[i].toFixed(2)), fullMark },
+                        { method: 'Nucleolus', value: Number(calculations.nucleolusValues[i].toFixed(2)), fullMark },
+                        { method: 'Equal Split', value: Number(calculations.equalSplit[i].toFixed(2)), fullMark },
                       ];
                       return (
                         <div key={p.id} className="flex flex-col items-center">
