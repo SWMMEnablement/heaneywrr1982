@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 const Footer = () => {
   const handleRestartTutorial = () => {
     localStorage.removeItem('hasSeenFirstTimeExperience');
-    localStorage.removeItem('hasSeenOnboardingTour');
+    localStorage.removeItem('hasSeenCostCalculatorTour');
     localStorage.removeItem('hasSeenCoreQuiz');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => window.location.reload(), 300);

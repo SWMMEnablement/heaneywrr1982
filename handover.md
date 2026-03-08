@@ -85,7 +85,9 @@ src/
 │   ├── use-mobile.tsx               # Responsive breakpoint hook
 │   └── use-toast.ts                 # Toast notification hook
 ├── lib/
-│   └── utils.ts                     # cn() utility for Tailwind class merging
+│   ├── utils.ts                     # cn() utility for Tailwind class merging
+│   ├── calculations.ts              # Extracted pure calculation functions (SCRB, Shapley, Nucleolus)
+│   └── calculations.test.ts         # 20 unit tests for calculation engine
 └── test/
     ├── setup.ts                     # Vitest setup
     └── example.test.ts              # Example test
@@ -425,7 +427,7 @@ Custom SVG parallel coordinates chart. Each vertical axis represents a participa
 
 ## 7. Calculation Engine
 
-All calculations are in a single `useMemo` block inside `CostCalculator.tsx` (lines 152–302). The engine is **purely functional** — no side effects, no mutations.
+All calculations are in a single `useMemo` block inside `CostCalculator.tsx` (lines 152–302). The same logic has been **extracted as pure functions** into `src/lib/calculations.ts` for testability. The engine is **purely functional** — no side effects, no mutations. A comprehensive test suite (`src/lib/calculations.test.ts`, 20 tests) validates SCRB, Shapley, Nucleolus, and cross-method properties.
 
 ### Input
 
@@ -712,7 +714,7 @@ Technical terms throughout the app are wrapped in `<GlossaryTermLink>` for hover
 6. **More Player Support**: Extend beyond 4 players (would require generalized permutation handling)
 7. **Accessibility Audit**: Ensure full keyboard navigation and screen reader support for SVG visualizations
 8. **Performance**: The Core visualization re-renders on every input change; consider debouncing for slider interactions
-9. **Testing**: Only an example test exists; unit tests for calculation engine would be valuable
+9. **Testing**: Calculation engine has 20 unit tests; UI component tests and integration tests would add further coverage
 10. **Mobile Optimization**: Core plot SVG interactions (dragging) may be challenging on small screens
 
 ---
@@ -725,4 +727,4 @@ This is a **self-contained, client-side educational SPA** with no backend depend
 Index.tsx → CostCalculator.tsx → calculations (useMemo) → [ShowStepsPanel, CoreVisualization, Charts, Challenges]
 ```
 
-The app's pedagogical value comes from its **layered disclosure** (FirstTimeExperience → OnboardingTour → CoreStoryMode → Quizzes) and **transparent calculations** (ShowStepsPanel). All game theory algorithms are implemented inline in `CostCalculator.tsx` lines 152–302.
+The app's pedagogical value comes from its **layered disclosure** (FirstTimeExperience → OnboardingTour → CoreStoryMode → Quizzes) and **transparent calculations** (ShowStepsPanel). All game theory algorithms are implemented inline in `CostCalculator.tsx` lines 152–302 and also extracted to `src/lib/calculations.ts` with 20 unit tests.
