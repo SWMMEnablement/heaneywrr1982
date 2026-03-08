@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Eye, EyeOff, Calculator, ArrowRight, Plus, Equal, Divide } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, EyeOff, Calculator, ArrowRight, Plus, Equal, Divide, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
