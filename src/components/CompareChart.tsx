@@ -3,7 +3,7 @@ import { GitCompare, ArrowRight, ArrowUp, ArrowDown, Minus, TrendingUp, BarChart
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMemo } from "react";
-type MethodType = 'scrb' | 'shapley' | 'nucleolus' | 'equal';
+type MethodType = 'scrb' | 'mcrs' | 'shapley' | 'nucleolus' | 'equal';
 
 interface Participant {
   id: number;
