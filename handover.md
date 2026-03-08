@@ -727,4 +727,4 @@ This is a **self-contained, client-side educational SPA** with no backend depend
 Index.tsx → CostCalculator.tsx → calculations (useMemo) → [ShowStepsPanel, CoreVisualization, Charts, Challenges]
 ```
 
-The app's pedagogical value comes from its **layered disclosure** (FirstTimeExperience → OnboardingTour → CoreStoryMode → Quizzes) and **transparent calculations** (ShowStepsPanel). All game theory algorithms are implemented inline in `CostCalculator.tsx` lines 152–302.
+The app's pedagogical value comes from its **layered disclosure** (FirstTimeExperience → OnboardingTour → CoreStoryMode → Quizzes) and **transparent calculations** (ShowStepsPanel). All game theory algorithms are implemented inline in `CostCalculator.tsx` lines 152–302 and also extracted to `src/lib/calculations.ts` with 20 unit tests.
