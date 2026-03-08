@@ -43,6 +43,7 @@ const methodColors: Record<MethodType, string> = {
 const CompareChart = ({
   participants,
   scrbAllocations,
+  mcrsAllocations,
   shapleyValues,
   nucleolusValues,
   equalSplit,
@@ -54,6 +55,7 @@ const CompareChart = ({
   const getMethodValues = (method: MethodType): number[] => {
     switch (method) {
       case 'scrb': return scrbAllocations;
+      case 'mcrs': return mcrsAllocations;
       case 'shapley': return shapleyValues;
       case 'nucleolus': return nucleolusValues;
       case 'equal': return equalSplit;
