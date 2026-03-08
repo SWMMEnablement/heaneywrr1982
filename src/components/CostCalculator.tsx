@@ -470,6 +470,9 @@ const CostCalculator = () => {
                         <td className="py-3 px-2 text-right font-mono text-primary">
                           {calculations.scrbAllocations.reduce((a, b) => a + b, 0).toFixed(2)}
                         </td>
+                        <td className="py-3 px-2 text-right font-mono text-mcrs">
+                          {calculations.mcrsAllocations.reduce((a, b) => a + b, 0).toFixed(2)}
+                        </td>
                         <td className="py-3 px-2 text-right font-mono text-interactive">
                           {calculations.shapleyValues.reduce((a, b) => a + b, 0).toFixed(2)}
                         </td>
