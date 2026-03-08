@@ -145,6 +145,9 @@ const CostCalculator = () => {
   // Calculate cost allocations using extracted pure functions
   const calculations = useMemo(() => calculateAllocations(participants, coalitions), [participants, coalitions]);
 
+  // Check subadditivity violations
+  const subadditivityViolations = useMemo(() => checkSubadditivity(participants, coalitions), [participants, coalitions]);
+
   return (
     <section id="calculator" className="py-20 px-6">
       {/* First Time Experience - Soft Gate */}
