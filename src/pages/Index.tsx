@@ -7,6 +7,7 @@ import PaperDetails from "@/components/PaperDetails";
 import GameTheoryBackground from "@/components/GameTheoryBackground";
 import DocumentViewer from "@/components/DocumentViewer";
 import Footer from "@/components/Footer";
+import ScrollProgressTracker from "@/components/ScrollProgressTracker";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("hero");
