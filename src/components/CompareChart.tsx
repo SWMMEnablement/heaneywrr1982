@@ -3,7 +3,7 @@ import { GitCompare, ArrowRight, ArrowUp, ArrowDown, Minus, TrendingUp, BarChart
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useMemo } from "react";
-type MethodType = 'scrb' | 'shapley' | 'nucleolus' | 'equal';
+type MethodType = 'scrb' | 'mcrs' | 'shapley' | 'nucleolus' | 'equal';
 
 interface Participant {
   id: number;
@@ -14,6 +14,7 @@ interface Participant {
 interface CompareChartProps {
   participants: Participant[];
   scrbAllocations: number[];
+  mcrsAllocations: number[];
   shapleyValues: number[];
   nucleolusValues: number[];
   equalSplit: number[];
@@ -25,6 +26,7 @@ interface CompareChartProps {
 
 const methodLabels: Record<MethodType, string> = {
   scrb: 'SCRB',
+  mcrs: 'MCRS',
   shapley: 'Shapley',
   nucleolus: 'Nucleolus',
   equal: 'Equal Split'
@@ -32,6 +34,7 @@ const methodLabels: Record<MethodType, string> = {
 
 const methodColors: Record<MethodType, string> = {
   scrb: 'hsl(var(--primary))',
+  mcrs: 'hsl(var(--mcrs))',
   shapley: 'hsl(var(--interactive))',
   nucleolus: 'hsl(var(--accent))',
   equal: 'hsl(var(--muted-foreground))'
@@ -40,6 +43,7 @@ const methodColors: Record<MethodType, string> = {
 const CompareChart = ({
   participants,
   scrbAllocations,
+  mcrsAllocations,
   shapleyValues,
   nucleolusValues,
   equalSplit,
@@ -51,6 +55,7 @@ const CompareChart = ({
   const getMethodValues = (method: MethodType): number[] => {
     switch (method) {
       case 'scrb': return scrbAllocations;
+      case 'mcrs': return mcrsAllocations;
       case 'shapley': return shapleyValues;
       case 'nucleolus': return nucleolusValues;
       case 'equal': return equalSplit;

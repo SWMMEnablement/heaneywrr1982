@@ -37,6 +37,10 @@
     --interactive: 186 55% 42%;
     --interactive-foreground: 0 0% 100%;
 
+    /* Green for MCRS method */
+    --mcrs: 152 55% 38%;
+    --mcrs-foreground: 0 0% 100%;
+
     /* States */
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
@@ -92,6 +96,9 @@
 
     --interactive: 186 55% 55%;
     --interactive-foreground: 222 47% 11%;
+
+    --mcrs: 152 55% 48%;
+    --mcrs-foreground: 222 47% 11%;
 
     --destructive: 0 62% 55%;
     --destructive-foreground: 210 40% 98%;

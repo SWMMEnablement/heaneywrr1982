@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal, Users2 } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal, Users2, AlertTriangle } from "lucide-react";
 import { calculateAllocations, type Participant, type CoalitionCost } from "@/lib/calculations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,8 +40,8 @@ const CostCalculator = () => {
   ]);
 
   const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie' | 'radar' | 'compare'>('grouped');
-  const [compareMethod1, setCompareMethod1] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('scrb');
-  const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
+  const [compareMethod1, setCompareMethod1] = useState<'scrb' | 'mcrs' | 'shapley' | 'nucleolus' | 'equal'>('scrb');
+  const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'mcrs' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
   const [showTour, setShowTour] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [showFirstTime, setShowFirstTime] = useState(false);
@@ -398,6 +398,12 @@ const CostCalculator = () => {
                         </th>
                         <th className="py-3 px-2 text-right font-medium">
                           <span className="inline-flex items-center gap-1">
+                            <div className="w-2 h-2 rounded-full bg-mcrs" />
+                            MCRS
+                          </span>
+                        </th>
+                        <th className="py-3 px-2 text-right font-medium">
+                          <span className="inline-flex items-center gap-1">
                             <div className="w-2 h-2 rounded-full bg-interactive" />
                             Shapley
                           </span>
@@ -406,6 +412,19 @@ const CostCalculator = () => {
                           <span className="inline-flex items-center gap-1">
                             <div className="w-2 h-2 rounded-full bg-accent" />
                             Nucleolus
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20 cursor-help">
+                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                  Approx
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-xs">
+                                <p className="text-xs">
+                                  The Nucleolus uses an iterative heuristic approximation (100 iterations, step=0.01) rather than the exact LP-based formulation. Results are reasonable for the default scenario but may be inaccurate for other inputs.
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
                           </span>
                         </th>
                         <th className="py-3 px-2 text-right font-medium">
@@ -431,6 +450,9 @@ const CostCalculator = () => {
                             <td className="py-3 px-2 text-right font-mono font-medium text-primary">
                               {calculations.scrbAllocations[i].toFixed(2)}
                             </td>
+                            <td className="py-3 px-2 text-right font-mono font-medium text-mcrs">
+                              {calculations.mcrsAllocations[i].toFixed(2)}
+                            </td>
                             <td className="py-3 px-2 text-right font-mono font-medium text-interactive">
                               {calculations.shapleyValues[i].toFixed(2)}
                             </td>
@@ -448,6 +470,9 @@ const CostCalculator = () => {
                         <td className="py-3 px-2 text-right font-mono text-primary">
                           {calculations.scrbAllocations.reduce((a, b) => a + b, 0).toFixed(2)}
                         </td>
+                        <td className="py-3 px-2 text-right font-mono text-mcrs">
+                          {calculations.mcrsAllocations.reduce((a, b) => a + b, 0).toFixed(2)}
+                        </td>
                         <td className="py-3 px-2 text-right font-mono text-interactive">
                           {calculations.shapleyValues.reduce((a, b) => a + b, 0).toFixed(2)}
                         </td>
@@ -463,12 +488,19 @@ const CostCalculator = () => {
                 </div>
 
                 {/* Method Descriptions */}
-                <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-xs text-muted-foreground">
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/5">
                     <div className="w-2 h-2 rounded-full bg-primary mt-1 shrink-0" />
                     <div>
                       <span className="font-medium text-primary">SCRB</span>
                       <p>Separable costs + proportional remaining benefits share</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2 p-2 rounded-lg bg-mcrs/5">
+                    <div className="w-2 h-2 rounded-full bg-mcrs mt-1 shrink-0" />
+                    <div>
+                      <span className="font-medium text-mcrs">MCRS</span>
+                      <p>Minimum costs + proportional remaining savings (paper's main contribution)</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-interactive/5">
@@ -482,6 +514,10 @@ const CostCalculator = () => {
                     <div className="w-2 h-2 rounded-full bg-accent mt-1 shrink-0" />
                     <div>
                       <span className="font-medium text-accent">Nucleolus</span>
+                      <span className="inline-flex items-center gap-0.5 ml-1 px-1 py-0 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20">
+                        <AlertTriangle className="w-2 h-2" />
+                        Approx
+                      </span>
                       <p>Minimizes maximum coalition dissatisfaction</p>
                     </div>
                   </div>
@@ -588,6 +624,7 @@ const CostCalculator = () => {
                       data={participants.map((p, i) => ({
                         name: p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name,
                         SCRB: Number(calculations.scrbAllocations[i].toFixed(2)),
+                        MCRS: Number(calculations.mcrsAllocations[i].toFixed(2)),
                         Shapley: Number(calculations.shapleyValues[i].toFixed(2)),
                         Nucleolus: Number(calculations.nucleolusValues[i].toFixed(2)),
                         'Equal Split': Number(calculations.equalSplit[i].toFixed(2)),
@@ -635,6 +672,12 @@ const CostCalculator = () => {
                         animationDuration={800}
                       />
                       <Bar 
+                        dataKey="MCRS" 
+                        fill="hsl(var(--mcrs))" 
+                        radius={[4, 4, 0, 0]}
+                        animationDuration={800}
+                      />
+                      <Bar 
                         dataKey="Shapley" 
                         fill="hsl(var(--interactive))" 
                         radius={[4, 4, 0, 0]}
@@ -662,6 +705,10 @@ const CostCalculator = () => {
                         {
                           name: 'SCRB',
                           ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.scrbAllocations[i]])),
+                        },
+                        {
+                          name: 'MCRS',
+                          ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.mcrsAllocations[i]])),
                         },
                         {
                           name: 'Shapley',
@@ -728,6 +775,7 @@ const CostCalculator = () => {
                   <div className="grid grid-cols-2 gap-6">
                     {[
                       { name: 'SCRB', values: calculations.scrbAllocations, color: 'hsl(var(--primary))' },
+                      { name: 'MCRS', values: calculations.mcrsAllocations, color: 'hsl(var(--mcrs))' },
                       { name: 'Shapley', values: calculations.shapleyValues, color: 'hsl(var(--interactive))' },
                       { name: 'Nucleolus', values: calculations.nucleolusValues, color: 'hsl(var(--accent))' },
                       { name: 'Equal Split', values: calculations.equalSplit, color: 'hsl(var(--muted-foreground))' },
@@ -780,11 +828,13 @@ const CostCalculator = () => {
                 ) : chartMode === 'radar' ? (
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {participants.map((p, i) => {
+                      const fullMark = Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.mcrsAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j])));
                       const radarData = [
-                        { method: 'SCRB', value: Number(calculations.scrbAllocations[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
-                        { method: 'Shapley', value: Number(calculations.shapleyValues[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
-                        { method: 'Nucleolus', value: Number(calculations.nucleolusValues[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
-                        { method: 'Equal Split', value: Number(calculations.equalSplit[i].toFixed(2)), fullMark: Math.max(...participants.map((_, j) => Math.max(calculations.scrbAllocations[j], calculations.shapleyValues[j], calculations.nucleolusValues[j], calculations.equalSplit[j]))) },
+                        { method: 'SCRB', value: Number(calculations.scrbAllocations[i].toFixed(2)), fullMark },
+                        { method: 'MCRS', value: Number(calculations.mcrsAllocations[i].toFixed(2)), fullMark },
+                        { method: 'Shapley', value: Number(calculations.shapleyValues[i].toFixed(2)), fullMark },
+                        { method: 'Nucleolus', value: Number(calculations.nucleolusValues[i].toFixed(2)), fullMark },
+                        { method: 'Equal Split', value: Number(calculations.equalSplit[i].toFixed(2)), fullMark },
                       ];
                       return (
                         <div key={p.id} className="flex flex-col items-center">
@@ -824,7 +874,7 @@ const CostCalculator = () => {
                             </RadarChart>
                           </ResponsiveContainer>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Avg: {((calculations.scrbAllocations[i] + calculations.shapleyValues[i] + calculations.nucleolusValues[i] + calculations.equalSplit[i]) / 4).toFixed(2)}
+                            Avg: {((calculations.scrbAllocations[i] + calculations.mcrsAllocations[i] + calculations.shapleyValues[i] + calculations.nucleolusValues[i] + calculations.equalSplit[i]) / 5).toFixed(2)}
                           </p>
                         </div>
                       );
@@ -834,6 +884,7 @@ const CostCalculator = () => {
                   <CompareChart
                     participants={participants}
                     scrbAllocations={calculations.scrbAllocations}
+                    mcrsAllocations={calculations.mcrsAllocations}
                     shapleyValues={calculations.shapleyValues}
                     nucleolusValues={calculations.nucleolusValues}
                     equalSplit={calculations.equalSplit}
