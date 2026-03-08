@@ -40,8 +40,8 @@ const CostCalculator = () => {
   ]);
 
   const [chartMode, setChartMode] = useState<'grouped' | 'stacked' | 'pie' | 'radar' | 'compare'>('grouped');
-  const [compareMethod1, setCompareMethod1] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('scrb');
-  const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
+  const [compareMethod1, setCompareMethod1] = useState<'scrb' | 'mcrs' | 'shapley' | 'nucleolus' | 'equal'>('scrb');
+  const [compareMethod2, setCompareMethod2] = useState<'scrb' | 'mcrs' | 'shapley' | 'nucleolus' | 'equal'>('shapley');
   const [showTour, setShowTour] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [showFirstTime, setShowFirstTime] = useState(false);
