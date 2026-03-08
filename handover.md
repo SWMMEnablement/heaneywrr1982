@@ -85,7 +85,9 @@ src/
 │   ├── use-mobile.tsx               # Responsive breakpoint hook
 │   └── use-toast.ts                 # Toast notification hook
 ├── lib/
-│   └── utils.ts                     # cn() utility for Tailwind class merging
+│   ├── utils.ts                     # cn() utility for Tailwind class merging
+│   ├── calculations.ts              # Extracted pure calculation functions (SCRB, Shapley, Nucleolus)
+│   └── calculations.test.ts         # 20 unit tests for calculation engine
 └── test/
     ├── setup.ts                     # Vitest setup
     └── example.test.ts              # Example test
