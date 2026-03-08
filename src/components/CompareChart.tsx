@@ -26,6 +26,7 @@ interface CompareChartProps {
 
 const methodLabels: Record<MethodType, string> = {
   scrb: 'SCRB',
+  mcrs: 'MCRS',
   shapley: 'Shapley',
   nucleolus: 'Nucleolus',
   equal: 'Equal Split'
@@ -33,6 +34,7 @@ const methodLabels: Record<MethodType, string> = {
 
 const methodColors: Record<MethodType, string> = {
   scrb: 'hsl(var(--primary))',
+  mcrs: 'hsl(var(--mcrs))',
   shapley: 'hsl(var(--interactive))',
   nucleolus: 'hsl(var(--accent))',
   equal: 'hsl(var(--muted-foreground))'
