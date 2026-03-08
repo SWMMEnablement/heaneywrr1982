@@ -874,7 +874,7 @@ const CostCalculator = () => {
                             </RadarChart>
                           </ResponsiveContainer>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Avg: {((calculations.scrbAllocations[i] + calculations.shapleyValues[i] + calculations.nucleolusValues[i] + calculations.equalSplit[i]) / 4).toFixed(2)}
+                            Avg: {((calculations.scrbAllocations[i] + calculations.mcrsAllocations[i] + calculations.shapleyValues[i] + calculations.nucleolusValues[i] + calculations.equalSplit[i]) / 5).toFixed(2)}
                           </p>
                         </div>
                       );
