@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal, Users2 } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal, Users2, AlertTriangle } from "lucide-react";
 import { calculateAllocations, type Participant, type CoalitionCost } from "@/lib/calculations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
