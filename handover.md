@@ -427,7 +427,7 @@ Custom SVG parallel coordinates chart. Each vertical axis represents a participa
 
 ## 7. Calculation Engine
 
-All calculations are in a single `useMemo` block inside `CostCalculator.tsx` (lines 152–302). The engine is **purely functional** — no side effects, no mutations.
+All calculations are in a single `useMemo` block inside `CostCalculator.tsx` (lines 152–302). The same logic has been **extracted as pure functions** into `src/lib/calculations.ts` for testability. The engine is **purely functional** — no side effects, no mutations. A comprehensive test suite (`src/lib/calculations.test.ts`, 20 tests) validates SCRB, Shapley, Nucleolus, and cross-method properties.
 
 ### Input
 
