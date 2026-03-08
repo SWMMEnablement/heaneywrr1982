@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Eye, EyeOff, Calculator, ArrowRight, Plus, Equal, Divide } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, EyeOff, Calculator, ArrowRight, Plus, Equal, Divide, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -26,6 +26,7 @@ interface ShowStepsPanelProps {
     separableCosts: number[];
     nonseparableCost: number;
     scrbAllocations: number[];
+    mcrsAllocations: number[];
     shapleyValues: number[];
     nucleolusValues: number[];
     grandCoalitionCost: number;
@@ -79,6 +80,43 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
       final: separable + share,
     };
   });
+
+  // MCRS steps
+  const mcrsSteps = (() => {
+    const minimumCosts = participants.map(p => {
+      let minMarginal = p.independentCost;
+      for (const coalition of coalitions) {
+        if (!coalition.participants.includes(p.id) || coalition.participants.length < 2) continue;
+        const withoutIds = coalition.participants.filter(id => id !== p.id);
+        let costWithout: number;
+        if (withoutIds.length === 1) {
+          costWithout = participants.find(pp => pp.id === withoutIds[0])?.independentCost ?? 0;
+        } else {
+          const wc = coalitions.find(c =>
+            c.participants.length === withoutIds.length &&
+            withoutIds.every(id => c.participants.includes(id))
+          );
+          costWithout = wc?.cost ?? 0;
+        }
+        minMarginal = Math.min(minMarginal, coalition.cost - costWithout);
+      }
+      return Math.max(0, minMarginal);
+    });
+
+    const totalMin = minimumCosts.reduce((a, b) => a + b, 0);
+    const grandCost = coalitions.find(c => c.participants.length === n)?.cost ?? 0;
+    const remaining = grandCost - totalMin;
+    const totalIndep = participants.reduce((s, p) => s + p.independentCost, 0);
+
+    return participants.map((p, i) => ({
+      participant: p,
+      minimumCost: minimumCosts[i],
+      totalMinimumCosts: totalMin,
+      remainingSavings: remaining,
+      share: totalIndep > 0 ? (p.independentCost / totalIndep) * remaining : remaining / n,
+      final: calculations.mcrsAllocations[i],
+    }));
+  })();
 
   return (
     <Card className="card-elevated">
@@ -233,6 +271,68 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                 </CollapsibleContent>
               </Collapsible>
 
+              {/* MCRS Method */}
+              <Collapsible open={openMethod === 'mcrs'} onOpenChange={() => setOpenMethod(openMethod === 'mcrs' ? null : 'mcrs')}>
+                <CollapsibleTrigger className="w-full">
+                  <div className="flex items-center justify-between p-3 rounded-lg bg-mcrs/10 border border-mcrs/20 hover:bg-mcrs/15 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-mcrs" />
+                      <span className="font-medium">MCRS Method</span>
+                      <Badge variant="secondary" className="text-xs">Paper's contribution</Badge>
+                    </div>
+                    {openMethod === 'mcrs' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                  </div>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      <span className="text-foreground font-medium">MCRS (Minimum Costs, Remaining Savings)</span> is Heaney & Dickinson's 
+                      proposed improvement over SCRB. Instead of separable costs, it uses each player's{" "}
+                      <span className="text-foreground font-medium">minimum marginal contribution</span> across all coalitions.
+                    </p>
+
+                    <div className="p-3 rounded-lg bg-background border border-border">
+                      <p className="text-xs font-medium mb-2">Formula:</p>
+                      <p className="font-mono text-sm">
+                        x<sub>i</sub> = MC<sub>i</sub> + (c(i) / Σc(j)) × RS
+                      </p>
+                      <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                        <p>• MC<sub>i</sub> = min over all S containing i of [c(S) - c(S\{'{i}'})]</p>
+                        <p>• RS = Remaining Savings = c(N) - ΣMC = {mcrsSteps[0]?.remainingSavings.toFixed(2)}</p>
+                        <p>• Share proportional to standalone cost c(i)</p>
+                      </div>
+                    </div>
+                    
+                    {mcrsSteps.map((step) => (
+                      <div key={step.participant.id} className="space-y-2 p-3 rounded-lg bg-background/50">
+                        <p className="font-medium">{step.participant.name}</p>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>
+                            <span className="text-muted-foreground">c({step.participant.id}) alone:</span>
+                            <span className="font-mono ml-2">{step.participant.independentCost}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Minimum cost:</span>
+                            <span className="font-mono ml-2">{step.minimumCost.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">RS share:</span>
+                            <span className="font-mono ml-2">{step.share.toFixed(2)}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm pt-1 border-t border-dashed border-border">
+                          <span className="font-mono">{step.minimumCost.toFixed(2)}</span>
+                          <Plus className="w-3 h-3" />
+                          <span className="font-mono">{step.share.toFixed(2)}</span>
+                          <Equal className="w-3 h-3" />
+                          <span className="font-mono font-bold text-mcrs">{step.final.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+
               {/* Nucleolus */}
               <Collapsible open={openMethod === 'nucleolus'} onOpenChange={() => setOpenMethod(openMethod === 'nucleolus' ? null : 'nucleolus')}>
                 <CollapsibleTrigger className="w-full">
@@ -241,6 +341,10 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                       <div className="w-3 h-3 rounded-full bg-accent" />
                       <span className="font-medium">Nucleolus</span>
                       <Badge variant="secondary" className="text-xs">Iterative optimization</Badge>
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20">
+                        <AlertTriangle className="w-2.5 h-2.5" />
+                        Approx
+                      </span>
                     </div>
                     {openMethod === 'nucleolus' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </div>

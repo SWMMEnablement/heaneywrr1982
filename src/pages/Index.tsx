@@ -7,6 +7,7 @@ import PaperDetails from "@/components/PaperDetails";
 import GameTheoryBackground from "@/components/GameTheoryBackground";
 import DocumentViewer from "@/components/DocumentViewer";
 import Footer from "@/components/Footer";
+import ScrollProgressTracker from "@/components/ScrollProgressTracker";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState("hero");
@@ -51,26 +52,27 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation activeTab={activeTab} onNavigate={handleNavigate} />
+      <ScrollProgressTracker />
       
-      <div ref={sectionRefs.hero}>
+      <div ref={sectionRefs.hero} data-section="hero">
         <HeroSection onNavigate={handleNavigate} />
       </div>
 
       <ExecutiveSummary />
       
-      <div ref={sectionRefs.theory}>
+      <div ref={sectionRefs.theory} data-section="theory">
         <GameTheoryBackground />
       </div>
       
-      <div ref={sectionRefs.calculator}>
+      <div ref={sectionRefs.calculator} data-section="calculator">
         <CostCalculator />
       </div>
       
-      <div ref={sectionRefs.paper}>
+      <div ref={sectionRefs.paper} data-section="paper">
         <PaperDetails />
       </div>
       
-      <div ref={sectionRefs.document}>
+      <div ref={sectionRefs.document} data-section="document">
         <DocumentViewer />
       </div>
       
