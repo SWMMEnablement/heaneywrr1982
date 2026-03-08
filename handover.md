@@ -714,7 +714,7 @@ Technical terms throughout the app are wrapped in `<GlossaryTermLink>` for hover
 6. **More Player Support**: Extend beyond 4 players (would require generalized permutation handling)
 7. **Accessibility Audit**: Ensure full keyboard navigation and screen reader support for SVG visualizations
 8. **Performance**: The Core visualization re-renders on every input change; consider debouncing for slider interactions
-9. **Testing**: Only an example test exists; unit tests for calculation engine would be valuable
+9. **Testing**: Calculation engine has 20 unit tests; UI component tests and integration tests would add further coverage
 10. **Mobile Optimization**: Core plot SVG interactions (dragging) may be challenging on small screens
 
 ---
