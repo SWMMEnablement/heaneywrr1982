@@ -870,6 +870,7 @@ const CostCalculator = () => {
                   <CompareChart
                     participants={participants}
                     scrbAllocations={calculations.scrbAllocations}
+                    mcrsAllocations={calculations.mcrsAllocations}
                     shapleyValues={calculations.shapleyValues}
                     nucleolusValues={calculations.nucleolusValues}
                     equalSplit={calculations.equalSplit}
