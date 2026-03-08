@@ -81,6 +81,43 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
     };
   });
 
+  // MCRS steps
+  const mcrsSteps = (() => {
+    const minimumCosts = participants.map(p => {
+      let minMarginal = p.independentCost;
+      for (const coalition of coalitions) {
+        if (!coalition.participants.includes(p.id) || coalition.participants.length < 2) continue;
+        const withoutIds = coalition.participants.filter(id => id !== p.id);
+        let costWithout: number;
+        if (withoutIds.length === 1) {
+          costWithout = participants.find(pp => pp.id === withoutIds[0])?.independentCost ?? 0;
+        } else {
+          const wc = coalitions.find(c =>
+            c.participants.length === withoutIds.length &&
+            withoutIds.every(id => c.participants.includes(id))
+          );
+          costWithout = wc?.cost ?? 0;
+        }
+        minMarginal = Math.min(minMarginal, coalition.cost - costWithout);
+      }
+      return Math.max(0, minMarginal);
+    });
+
+    const totalMin = minimumCosts.reduce((a, b) => a + b, 0);
+    const grandCost = coalitions.find(c => c.participants.length === n)?.cost ?? 0;
+    const remaining = grandCost - totalMin;
+    const totalIndep = participants.reduce((s, p) => s + p.independentCost, 0);
+
+    return participants.map((p, i) => ({
+      participant: p,
+      minimumCost: minimumCosts[i],
+      totalMinimumCosts: totalMin,
+      remainingSavings: remaining,
+      share: totalIndep > 0 ? (p.independentCost / totalIndep) * remaining : remaining / n,
+      final: calculations.mcrsAllocations[i],
+    }));
+  })();
+
   return (
     <Card className="card-elevated">
       <CardHeader className="pb-3">
