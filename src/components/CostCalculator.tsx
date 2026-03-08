@@ -707,6 +707,10 @@ const CostCalculator = () => {
                           ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.scrbAllocations[i]])),
                         },
                         {
+                          name: 'MCRS',
+                          ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.mcrsAllocations[i]])),
+                        },
+                        {
                           name: 'Shapley',
                           ...Object.fromEntries(participants.map((p, i) => [p.name, calculations.shapleyValues[i]])),
                         },
