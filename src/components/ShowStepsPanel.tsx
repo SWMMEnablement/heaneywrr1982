@@ -32,6 +32,13 @@ interface ShowStepsPanelProps {
   };
 }
 
+const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPanelProps) => {
+  const [showSteps, setShowSteps] = useState(false);
+  const [openMethod, setOpenMethod] = useState<string | null>(null);
+
+  const n = participants.length;
+  const allOrders = permutations(participants.map(p => p.id));
+
   // Calculate Shapley value step by step
   const shapleySteps = participants.map(p => {
     const contributions: { order: number[]; before: number[]; marginal: number }[] = [];
@@ -39,7 +46,7 @@ interface ShowStepsPanelProps {
     for (const order of allOrders) {
       const playerIndex = order.indexOf(p.id);
       const before = order.slice(0, playerIndex);
-      const marginal = getMarginalContribution(p.id, before);
+      const marginal = getMarginalContribution(p.id, before, participants, coalitions);
       contributions.push({ order, before, marginal });
     }
     
