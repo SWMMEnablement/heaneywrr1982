@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { GlossaryTermLink } from "./Glossary";
+import { permutations, getCoalitionCost, getMarginalContribution } from "@/lib/steps-helpers";
 
 interface Participant {
   id: number;
@@ -31,46 +32,12 @@ interface ShowStepsPanelProps {
   };
 }
 
-// Generate all permutations of an array
-const permutations = <T,>(arr: T[]): T[][] => {
-  if (arr.length <= 1) return [arr];
-  const result: T[][] = [];
-  for (let i = 0; i < arr.length; i++) {
-    const rest = [...arr.slice(0, i), ...arr.slice(i + 1)];
-    const perms = permutations(rest);
-    for (const perm of perms) {
-      result.push([arr[i], ...perm]);
-    }
-  }
-  return result;
-};
-
 const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPanelProps) => {
   const [showSteps, setShowSteps] = useState(false);
   const [openMethod, setOpenMethod] = useState<string | null>(null);
 
   const n = participants.length;
   const allOrders = permutations(participants.map(p => p.id));
-
-  // Get coalition cost by participants
-  const getCoalitionCost = (ids: number[]): number => {
-    if (ids.length === 1) {
-      return participants.find(p => p.id === ids[0])?.independentCost ?? 0;
-    }
-    const sorted = [...ids].sort((a, b) => a - b);
-    const coalition = coalitions.find(c => 
-      c.participants.length === sorted.length &&
-      sorted.every(id => c.participants.includes(id))
-    );
-    return coalition?.cost ?? 0;
-  };
-
-  // Calculate marginal contribution for a player in a specific ordering
-  const getMarginalContribution = (playerId: number, orderBefore: number[]): number => {
-    const costWithPlayer = getCoalitionCost([...orderBefore, playerId]);
-    const costWithout = orderBefore.length === 0 ? 0 : getCoalitionCost(orderBefore);
-    return costWithPlayer - costWithout;
-  };
 
   // Calculate Shapley value step by step
   const shapleySteps = participants.map(p => {
@@ -79,7 +46,7 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
     for (const order of allOrders) {
       const playerIndex = order.indexOf(p.id);
       const before = order.slice(0, playerIndex);
-      const marginal = getMarginalContribution(p.id, before);
+      const marginal = getMarginalContribution(p.id, before, participants, coalitions);
       contributions.push({ order, before, marginal });
     }
     
