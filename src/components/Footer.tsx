@@ -1,6 +1,15 @@
-import { BookOpen, Github, ExternalLink } from "lucide-react";
+import { BookOpen, ExternalLink, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Footer = () => {
+  const handleRestartTutorial = () => {
+    localStorage.removeItem('hasSeenFirstTimeExperience');
+    localStorage.removeItem('hasSeenOnboardingTour');
+    localStorage.removeItem('hasSeenCoreQuiz');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => window.location.reload(), 300);
+  };
+
   return (
     <footer className="bg-primary text-primary-foreground py-12 px-6">
       <div className="container max-w-6xl">
@@ -84,9 +93,20 @@ const Footer = () => {
           <p>
             Based on research from Water Resources Research, Vol. 18, No. 3, June 1982
           </p>
-          <p>
-            © {new Date().getFullYear()} Educational Tool • Built with React
-          </p>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRestartTutorial}
+              className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Restart Tutorial
+            </Button>
+            <p>
+              © {new Date().getFullYear()} Educational Tool • Built with React
+            </p>
+          </div>
         </div>
       </div>
     </footer>
