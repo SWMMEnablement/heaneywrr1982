@@ -624,6 +624,7 @@ const CostCalculator = () => {
                       data={participants.map((p, i) => ({
                         name: p.name.length > 12 ? p.name.slice(0, 12) + '…' : p.name,
                         SCRB: Number(calculations.scrbAllocations[i].toFixed(2)),
+                        MCRS: Number(calculations.mcrsAllocations[i].toFixed(2)),
                         Shapley: Number(calculations.shapleyValues[i].toFixed(2)),
                         Nucleolus: Number(calculations.nucleolusValues[i].toFixed(2)),
                         'Equal Split': Number(calculations.equalSplit[i].toFixed(2)),
