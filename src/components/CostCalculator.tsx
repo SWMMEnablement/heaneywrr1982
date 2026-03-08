@@ -20,16 +20,6 @@ import FirstTimeExperience from "./FirstTimeExperience";
 import ShowStepsPanel from "./ShowStepsPanel";
 import CheatSheet from "./CheatSheet";
 
-interface Participant {
-  id: number;
-  name: string;
-  independentCost: number;
-}
-
-interface CoalitionCost {
-  participants: number[];
-  cost: number;
-}
 
 const CostCalculator = () => {
   const [playerMode, setPlayerMode] = useState<3 | 4>(3);
