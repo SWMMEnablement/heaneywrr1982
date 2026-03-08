@@ -450,6 +450,9 @@ const CostCalculator = () => {
                             <td className="py-3 px-2 text-right font-mono font-medium text-primary">
                               {calculations.scrbAllocations[i].toFixed(2)}
                             </td>
+                            <td className="py-3 px-2 text-right font-mono font-medium text-mcrs">
+                              {calculations.mcrsAllocations[i].toFixed(2)}
+                            </td>
                             <td className="py-3 px-2 text-right font-mono font-medium text-interactive">
                               {calculations.shapleyValues[i].toFixed(2)}
                             </td>
