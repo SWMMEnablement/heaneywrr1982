@@ -52,6 +52,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation activeTab={activeTab} onNavigate={handleNavigate} />
+      <ScrollProgressTracker />
       
       <div ref={sectionRefs.hero}>
         <HeroSection onNavigate={handleNavigate} />

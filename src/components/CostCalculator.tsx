@@ -401,7 +401,7 @@ const CostCalculator = () => {
                   Cost Allocations
                 </CardTitle>
                 <CardDescription>
-                  Comparing all four allocation methods side by side
+                  Comparing all five allocation methods side by side
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
