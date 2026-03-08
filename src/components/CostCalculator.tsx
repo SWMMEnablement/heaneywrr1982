@@ -349,6 +349,40 @@ const CostCalculator = () => {
                     ))}
                   </div>
                 </div>
+
+                {/* Subadditivity Warning */}
+                <AnimatePresence>
+                  {subadditivityViolations.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="p-3 rounded-lg bg-destructive/10 border border-destructive/20"
+                    >
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+                        <div className="text-xs">
+                          <p className="font-medium text-destructive mb-1">
+                            Subadditivity Violated
+                          </p>
+                          <p className="text-muted-foreground mb-2">
+                            Cooperation isn't beneficial for some coalitions — the joint cost exceeds the sum of separate costs.
+                          </p>
+                          {subadditivityViolations.slice(0, 3).map((v, i) => (
+                            <p key={i} className="font-mono text-destructive/80">
+                              c({'{' + v.coalitionS.join(',') + '}'} ∪ {'{' + v.coalitionT.join(',') + '}'}) = {v.costUnion} &gt; {v.costS} + {v.costT} = {v.costS + v.costT}
+                            </p>
+                          ))}
+                          {subadditivityViolations.length > 3 && (
+                            <p className="text-muted-foreground mt-1">
+                              ...and {subadditivityViolations.length - 3} more violation{subadditivityViolations.length - 3 > 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </CardContent>
             </Card>
           </motion.div>
