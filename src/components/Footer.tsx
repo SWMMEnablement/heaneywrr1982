@@ -93,9 +93,20 @@ const Footer = () => {
           <p>
             Based on research from Water Resources Research, Vol. 18, No. 3, June 1982
           </p>
-          <p>
-            © {new Date().getFullYear()} Educational Tool • Built with React
-          </p>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRestartTutorial}
+              className="text-primary-foreground/60 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Restart Tutorial
+            </Button>
+            <p>
+              © {new Date().getFullYear()} Educational Tool • Built with React
+            </p>
+          </div>
         </div>
       </div>
     </footer>
