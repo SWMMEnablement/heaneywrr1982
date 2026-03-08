@@ -704,18 +704,171 @@ Technical terms throughout the app are wrapped in `<GlossaryTermLink>` for hover
 
 ---
 
-## 14. Potential Future Improvements
+## 14. External Evaluation & Scorecard
 
-1. **Export Results**: Download calculator results as CSV/JSON
-2. **True Nucleolus**: Replace iterative approximation with LP-based exact nucleolus
-3. **MCRS Method**: Implement the paper's proposed MCRS method (currently only SCRB is implemented from the paper's methods)
-4. **Dark Mode Toggle**: Tokens are defined but no UI toggle exists
-5. **Shareable URLs**: Encode calculator state in URL params for sharing scenarios
-6. **More Player Support**: Extend beyond 4 players (would require generalized permutation handling)
-7. **Accessibility Audit**: Ensure full keyboard navigation and screen reader support for SVG visualizations
-8. **Performance**: The Core visualization re-renders on every input change; consider debouncing for slider interactions
-9. **Testing**: Calculation engine has 20 unit tests; UI component tests and integration tests would add further coverage
-10. **Mobile Optimization**: Core plot SVG interactions (dragging) may be challenging on small screens
+An independent evaluation graded the application **A- / A (~90/100)**. Below is the full assessment summary and prioritized roadmap.
+
+### Overall Scorecard
+
+| Category | Grade | Weight | Notes |
+|---|---|---|---|
+| Concept & Educational Value | A+ (96) | 20% | Deep rather than broad — exactly right |
+| Technical Architecture | B+ (86) | 15% | Modern stack, but monolith and bloat issues |
+| UI/UX Design | A (92) | 15% | Scholarly, cohesive, strong color system |
+| Code Quality & Maintainability | B+ (85) | 15% | Great docs, but calculation logic needs extraction |
+| Mathematical Accuracy | B (82) | 15% | SCRB correct; Shapley simplified; Nucleolus approximate; MCRS missing |
+| Pedagogical Design | A (93) | 10% | Four-layer disclosure is best-in-class |
+| Testing | D+ (65) | 5% | Near-zero coverage for a math tool (since improved — see §14.5) |
+| Performance & Accessibility | B (83) | 5% | Three.js bundle weight; SVG a11y gaps |
+| **Weighted Overall** | **~A-** | | **~90/100** |
+
+### 14.1 Concept & Educational Value — A+ (96/100)
+
+**Strengths:**
+- **Brilliant scope decision.** Choosing a single 7-page paper and going deep rather than broad is pedagogically superior. Students can genuinely *master* cooperative cost allocation by the end.
+- **The "Three Towns, One Reservoir" framing** transforms abstract math into a tangible story. Naming the players makes the Shapley value personal.
+- **Four layers of progressive disclosure** (FirstTimeExperience → OnboardingTour → CoreStoryMode → Quizzes) is sophisticated instructional design.
+- **The Core visualization is a standout feature.** Dragging allocation points and watching them turn red outside the Core delivers "aha moments" that textbooks can't.
+- **Transparent calculations** via ShowStepsPanel — showing all 6 Shapley permutations and the SCRB decomposition — bridges formula and intuition.
+- **The Example Bank** with "Empty Core Game" is a clever pedagogical touch that shows when the Core *doesn't exist*.
+
+**Gaps identified:**
+- **MCRS is missing.** The paper's main contribution (Minimum Costs, Remaining Savings) is not implemented. The app implements SCRB, which the paper *critiques*.
+- **No "predict before you peek" prompts** — asking students to guess before revealing answers would deepen processing.
+
+### 14.2 Technical Architecture — B+ (86/100)
+
+**Strengths:**
+- Single-page scroll architecture is the right choice for focused education.
+- Fully client-side with no backend eliminates deployment complexity.
+- Framer Motion's `whileInView` + `viewport: { once: true }` pattern creates polished animations.
+- React Three Fiber for the 4-player tetrahedron is ambitious but appropriate.
+
+**Gaps identified:**
+- **CostCalculator.tsx at ~1,050 lines is doing too much** — state owner, calculation engine, layout orchestrator, and renderer.
+- **Calculation engine embedded in `useMemo` inside a UI component** — should be extracted to pure functions. *(Partially addressed: `src/lib/calculations.ts` now exists with 20 tests, but CostCalculator still has its own inline copy.)*
+- **Significant dependency bloat** — unused packages: `@tanstack/react-query`, `react-hook-form`, `@hookform/resolvers`, `zod`, `react-day-picker`, `date-fns`, `input-otp`, `embla-carousel-react`, `react-resizable-panels`, `cmdk`, `next-themes`.
+- **No lazy loading** — Three.js bundle is substantial and only needed in 4-player mode. Should use `React.lazy()`.
+
+### 14.3 UI/UX Design — A (92/100)
+
+**Strengths:**
+- Scholarly design system is cohesive: Crimson Pro headings, Inter body, JetBrains Mono for formulas.
+- Consistent method color coding (SCRB = blue, Shapley = teal, Nucleolus = gold, Equal = gray) across all visualizations.
+- Five chart modes with Compare mode's difference arrows being particularly useful.
+- Core visualization overlay, clickable constraints, and print-ready CheatSheet show attention to the full user journey.
+
+**Gaps identified:**
+- **Dark mode is half-built** — tokens defined, `next-themes` installed, but no toggle. Finish or remove.
+- **Scroll-based navigation can lose users** — a progress indicator or section map would help.
+- **Mobile Core visualization** — dragging on small SVG is fiddly. Consider "tap to place" or larger touch targets.
+- **4-player tetrahedron** may be pedagogically confusing. More labeling, guided interaction, or a 2D projection option would help.
+
+### 14.4 Code Quality & Maintainability — B+ (85/100)
+
+**Strengths:**
+- TypeScript throughout with proper interfaces.
+- The handover document is outstanding.
+- GlossaryTermLink as a reusable hover-card component is elegant.
+- localStorage usage is minimal and well-documented.
+
+**Gaps identified:**
+- **CoreVisualization at ~1,200 lines** should be decomposed (triangle rendering, drag handling, overlay, geometry math).
+- **Shapley uses a "simplified 3-player approximation"** rather than the actual permutation formula. The 4-player version may be incorrect.
+- **Nucleolus uses an iterative heuristic** (100 iterations, step 0.01) rather than proper LP formulation. May silently fail for non-default inputs.
+- **Magic numbers** in Nucleolus (100 iterations, 0.01 step) are not justified or configurable.
+
+### 14.5 Testing — D+ → C+ (improving)
+
+**Original assessment:** Near-total absence of tests (only 1 placeholder).
+
+**Current state (post-improvements):**
+- `src/lib/calculations.test.ts` — 20 tests for SCRB, Shapley, Nucleolus, cross-method properties
+- `src/lib/steps-helpers.test.ts` — 20 tests for permutations, marginal contributions, full Shapley via permutations
+- `src/test/example.test.ts` — 1 placeholder test
+- **Total: 41 passing tests**
+
+**Still needed:**
+- Verification tests against the paper's worked examples (pages 478–480)
+- Edge case tests (zero costs, equal costs, subadditivity violations, empty Core scenarios)
+- Component rendering tests
+- Tests for 4-player mode calculations
+
+### 14.6 Mathematical Accuracy — B (82/100)
+
+**Correct:**
+- SCRB implementation matches textbook formulation
+- Core polygon computation (half-plane intersection) is geometrically sound
+- ShowStepsPanel correctly decomposes SCRB steps
+- Paper attribution is thorough
+
+**Concerns:**
+- **Nucleolus is approximate.** Real nucleolus requires sequential LP (lexicographic minimization of sorted excess vectors). Should be labeled "⚠ Approximate" or replaced with proper LP (e.g., `javascript-lp-solver`).
+- **Shapley is simplified.** Proper formula requires all n! permutations or all 2^n coalitions with combinatorial weights. The averaging shortcut works for 3 players but may be wrong for 4.
+- **MCRS absent** — the paper's main contribution is not implemented.
+- **No validation against the paper's numerical examples.**
+- **No error messaging for degenerate inputs** — subadditivity violations produce nonsensical allocations silently.
+
+### 14.7 Performance & Accessibility — B (83/100)
+
+**Performance gaps:**
+- Three.js bundle should be lazy-loaded
+- Core visualization re-renders on every input change — debounce sliders
+- Framer Motion bundle is justified by actual usage
+
+**Accessibility gaps:**
+- Core SVG lacks ARIA labels — screen readers get nothing from the most important visual
+- Drag interactions have no keyboard alternative (arrow key nudging needed)
+- Color-only method differentiation needs patterns/shapes for colorblind users
+- GlossaryTermLink hover cards should trigger on focus, not just hover
+
+---
+
+## 15. Prioritized Improvement Roadmap
+
+### High Priority
+
+1. **Fix Shapley value implementation.** Replace simplified averaging with proper permutation-based formula. For 3–4 players this is computationally trivial (6 and 24 permutations). The ShowStepsPanel already displays permutations — the UI is ready; the math needs to be correct. *(Note: `steps-helpers.ts` already has a correct `calculateShapleyViaPermutations` — wire it into the main calculator.)*
+
+2. **Fix or label the Nucleolus.** Either:
+   - (a) Add a visible "⚠ Approximate" badge with tooltip, OR
+   - (b) Implement proper nucleolus via sequential LP using `javascript-lp-solver`
+   - Option (b) is strongly preferred for an educational tool.
+
+3. **Implement the MCRS method.** This is the paper's main contribution. Without it, the app is a general cooperative game theory explorer, not an exploration *of* Heaney & Dickinson's work. Add as a fifth column in results and fifth color on the Core plot.
+
+4. **Add input validation for subadditivity.** When c(S∪T) > c(S) + c(T), display: "These costs don't satisfy subadditivity — cooperation isn't beneficial for coalition {X,Y}." This is both a safeguard and a teaching opportunity.
+
+5. **Write verification tests against the paper's worked examples** (pages 478–480). Assert exact or within-tolerance matches for SCRB and Shapley.
+
+6. **Deduplicate calculation logic.** CostCalculator.tsx still has inline calculations that duplicate `src/lib/calculations.ts`. Import from the shared utility.
+
+### Medium Priority
+
+7. **Clean up unused dependencies.** Remove: `@tanstack/react-query`, `react-hook-form`, `@hookform/resolvers`, `zod`, `react-day-picker`, `date-fns`, `input-otp`, `embla-carousel-react`, `react-resizable-panels`, `cmdk`. Either expose dark mode toggle or remove `next-themes`.
+
+8. **Lazy-load Three.js tetrahedron.** Wrap `TetrahedronVisualization` in `React.lazy()` + `Suspense`.
+
+9. **Add ARIA labels to the Core SVG.** Include `role="img"` and `aria-label` describing current state (core empty/non-empty, which allocations are inside/outside).
+
+10. **Add a progress tracker.** Vertical sidebar or floating indicator: "Problem ✓ → Theory ✓ → Calculator (current) → Paper → Document."
+
+11. **Decompose CoreVisualization.tsx** into:
+    - `CoreTriangle.tsx` — SVG rendering
+    - `CoreDragHandler.tsx` — Drag interaction logic
+    - `CoreOverlay.tsx` — Explanation overlay
+    - `coreGeometry.ts` — Barycentric math, polygon clipping
+
+12. **Finish or remove dark mode.** Test all visualizations (Core SVG, charts) if finishing.
+
+### Lower Priority
+
+13. **Add shareable URLs.** Encode scenario in query params (e.g., `?c1=2&c2=4&c3=6&c12=5&c13=6&c23=6&c123=7`).
+14. **Add CSV/JSON export** of calculation results.
+15. **Add "predict before you peek" mode** for ShowStepsPanel.
+16. **Add 5+ player mode** using generalized coalitional Shapley formula.
+17. **Add colorblind-safe chart patterns** (hatching, dots, dashes) alongside color coding.
+18. **Add "instructor mode"** — define scenario, generate shareable link with custom quiz questions.
 
 ---
 
@@ -727,4 +880,6 @@ This is a **self-contained, client-side educational SPA** with no backend depend
 Index.tsx → CostCalculator.tsx → calculations (useMemo) → [ShowStepsPanel, CoreVisualization, Charts, Challenges]
 ```
 
-The app's pedagogical value comes from its **layered disclosure** (FirstTimeExperience → OnboardingTour → CoreStoryMode → Quizzes) and **transparent calculations** (ShowStepsPanel). All game theory algorithms are implemented inline in `CostCalculator.tsx` lines 152–302 and also extracted to `src/lib/calculations.ts` with 20 unit tests.
+The app's pedagogical value comes from its **layered disclosure** (FirstTimeExperience → OnboardingTour → CoreStoryMode → Quizzes) and **transparent calculations** (ShowStepsPanel). All game theory algorithms are implemented inline in `CostCalculator.tsx` lines 152–302 and also extracted to `src/lib/calculations.ts` with 20 unit tests. Helper functions for permutations and marginal contributions are in `src/lib/steps-helpers.ts` with 20 additional tests.
+
+**The path from A- to A+ is clear:** fix the math (Shapley, Nucleolus, add MCRS), write tests that verify it against the paper, and clean up dependency bloat. The educational design, visual identity, and user experience are already there.
