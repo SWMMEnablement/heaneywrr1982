@@ -86,44 +86,49 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={onSkip}
           className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="onboarding-title"
         >
           <motion.div
             initial={{ scale: 0.95, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
-            className="w-full max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[90dvh]"
           >
-            <Card className="overflow-hidden shadow-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden shadow-2xl border-2 border-primary/20 flex flex-col max-h-[90dvh]">
               {/* Header */}
-              <div className="bg-gradient-to-r from-primary via-primary/90 to-interactive px-6 py-5 text-primary-foreground">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary-foreground/20">
+              <div className="shrink-0 bg-gradient-to-r from-primary via-primary/90 to-interactive px-6 py-4 text-primary-foreground">
+                <div className="flex items-center justify-between mb-3 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 rounded-lg bg-primary-foreground/20 shrink-0">
                       <Droplets className="w-5 h-5" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-medium text-primary-foreground/70 uppercase tracking-wider">
                         Getting Started • Step {currentStep + 1} of {steps.length}
                       </p>
-                      <h2 className="text-xl font-serif font-bold">{step.title}</h2>
+                      <h2 id="onboarding-title" className="text-xl font-serif font-bold truncate">{step.title}</h2>
                     </div>
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={onSkip}
-                    className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-1"
+                    aria-label="Close onboarding"
+                    className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0 focus-visible:ring-2 focus-visible:ring-primary-foreground"
                   >
-                    <SkipForward className="w-4 h-4" />
-                    Skip, I know this
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
                 <Progress value={progress} className="h-1.5 bg-primary-foreground/20" />
               </div>
 
               {/* Content */}
-              <CardContent className="p-6 min-h-[400px]">
+              <CardContent className="p-6 overflow-y-auto flex-1">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentStep}
@@ -134,6 +139,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                     className="space-y-6"
                   >
                     <p className="text-interactive font-medium">{step.subtitle}</p>
+
 
                     {/* Step 0: The Problem */}
                     {currentStep === 0 && (
