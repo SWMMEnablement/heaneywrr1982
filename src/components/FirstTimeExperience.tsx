@@ -209,7 +209,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                               className={`flex items-center justify-between p-4 rounded-xl bg-gradient-to-r ${town.color} border ${town.border}`}
                             >
                               <div className="flex items-center gap-4">
-                                <span className="text-3xl">{town.emoji}</span>
+                                <span className="text-3xl" aria-hidden="true">{town.emoji}</span>
                                 <div>
                                   <p className="font-semibold">{town.name}</p>
                                   <p className="text-sm text-muted-foreground">Building alone</p>
