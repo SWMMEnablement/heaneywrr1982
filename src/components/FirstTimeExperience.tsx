@@ -53,6 +53,15 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
     return () => clearTimeout(timer);
   }, []);
 
+  // Esc to skip
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onSkip();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onSkip]);
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
