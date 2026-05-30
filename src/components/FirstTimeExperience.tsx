@@ -53,6 +53,15 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
     return () => clearTimeout(timer);
   }, []);
 
+  // Esc to skip
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onSkip();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onSkip]);
+
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
@@ -77,44 +86,49 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
+          onClick={onSkip}
           className="fixed inset-0 z-50 bg-background/95 backdrop-blur-md flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="onboarding-title"
         >
           <motion.div
             initial={{ scale: 0.95, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.95, y: 20 }}
-            className="w-full max-w-2xl"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[90dvh]"
           >
-            <Card className="overflow-hidden shadow-2xl border-2 border-primary/20">
+            <Card className="overflow-hidden shadow-2xl border-2 border-primary/20 flex flex-col max-h-[90dvh]">
               {/* Header */}
-              <div className="bg-gradient-to-r from-primary via-primary/90 to-interactive px-6 py-5 text-primary-foreground">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-primary-foreground/20">
+              <div className="shrink-0 bg-gradient-to-r from-primary via-primary/90 to-interactive px-6 py-4 text-primary-foreground">
+                <div className="flex items-center justify-between mb-3 gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="p-2 rounded-lg bg-primary-foreground/20 shrink-0">
                       <Droplets className="w-5 h-5" />
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-xs font-medium text-primary-foreground/70 uppercase tracking-wider">
                         Getting Started • Step {currentStep + 1} of {steps.length}
                       </p>
-                      <h2 className="text-xl font-serif font-bold">{step.title}</h2>
+                      <h2 id="onboarding-title" className="text-xl font-serif font-bold truncate">{step.title}</h2>
                     </div>
                   </div>
                   <Button
                     variant="ghost"
-                    size="sm"
+                    size="icon"
                     onClick={onSkip}
-                    className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 gap-1"
+                    aria-label="Close onboarding"
+                    className="text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 shrink-0 focus-visible:ring-2 focus-visible:ring-primary-foreground"
                   >
-                    <SkipForward className="w-4 h-4" />
-                    Skip, I know this
+                    <X className="w-4 h-4" />
                   </Button>
                 </div>
                 <Progress value={progress} className="h-1.5 bg-primary-foreground/20" />
               </div>
 
               {/* Content */}
-              <CardContent className="p-6 min-h-[400px]">
+              <CardContent className="p-6 overflow-y-auto flex-1">
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={currentStep}
@@ -125,6 +139,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                     className="space-y-6"
                   >
                     <p className="text-interactive font-medium">{step.subtitle}</p>
+
 
                     {/* Step 0: The Problem */}
                     {currentStep === 0 && (
@@ -146,18 +161,19 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20">
-                            <p className="text-sm font-medium text-destructive mb-1">❌ Not Fair</p>
+                            <p className="text-sm font-medium text-destructive mb-1">❌ Too Naive</p>
                             <p className="text-sm text-muted-foreground">
                               "Just split it equally" ignores who benefits more
                             </p>
                           </div>
-                          <div className="p-4 rounded-lg bg-destructive/5 border border-destructive/20">
-                            <p className="text-sm font-medium text-destructive mb-1">❌ Also Not Fair</p>
+                          <div className="p-4 rounded-lg bg-amber-500/5 border border-amber-500/30">
+                            <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-1">⚠️ Misses the Point</p>
                             <p className="text-sm text-muted-foreground">
                               "Pay what you'd pay alone" removes incentive to cooperate
                             </p>
                           </div>
                         </div>
+
 
                         <div className="flex items-center gap-3 p-4 rounded-lg bg-interactive/10 border border-interactive/20">
                           <Lightbulb className="w-5 h-5 text-interactive shrink-0" />
@@ -193,7 +209,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                               className={`flex items-center justify-between p-4 rounded-xl bg-gradient-to-r ${town.color} border ${town.border}`}
                             >
                               <div className="flex items-center gap-4">
-                                <span className="text-3xl">{town.emoji}</span>
+                                <span className="text-3xl" aria-hidden="true">{town.emoji}</span>
                                 <div>
                                   <p className="font-semibold">{town.name}</p>
                                   <p className="text-sm text-muted-foreground">Building alone</p>
@@ -229,9 +245,10 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                           ].map(c => (
                             <div key={c.names} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
                               <div className="flex items-center gap-3">
-                                <div className="flex -space-x-2 text-xl">
+                                <div className="flex -space-x-2 text-xl" aria-hidden="true">
                                   {c.partners.map((p, i) => <span key={i}>{p}</span>)}
                                 </div>
+
                                 <p className="text-sm font-medium">{c.names}</p>
                               </div>
                               <div className="flex items-center gap-3">
@@ -251,9 +268,10 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="flex -space-x-2 text-2xl">
+                              <div className="flex -space-x-2 text-2xl" aria-hidden="true">
                                 <span>🏘️</span><span>🏔️</span><span>🌊</span>
                               </div>
+
                               <div>
                                 <p className="font-bold text-lg">All Three Together</p>
                                 <p className="text-sm text-muted-foreground">
@@ -380,24 +398,40 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
               </CardContent>
 
               {/* Footer */}
-              <div className="flex items-center justify-between gap-4 px-6 py-4 border-t bg-muted/30">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handlePrev}
-                  disabled={currentStep === 0}
-                  className="gap-1"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back
-                </Button>
+              <div className="shrink-0 flex items-center justify-between gap-2 px-4 sm:px-6 py-3 border-t bg-muted/30">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePrev}
+                    disabled={currentStep === 0}
+                    className="gap-1 focus-visible:ring-2 focus-visible:ring-interactive"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onSkip}
+                    className="gap-1 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-interactive"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    <span className="hidden sm:inline">Skip tutorial</span>
+                    <span className="sm:hidden">Skip</span>
+                  </Button>
+                </div>
 
-                <div className="flex gap-1.5">
-                  {steps.map((_, i) => (
+                <div className="flex gap-1.5" role="tablist" aria-label="Onboarding steps">
+                  {steps.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => setCurrentStep(i)}
-                      className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      role="tab"
+                      aria-label={`Go to step ${i + 1}: ${s.title}`}
+                      aria-current={i === currentStep ? "step" : undefined}
+                      aria-selected={i === currentStep}
+                      className={`w-2.5 h-2.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive focus-visible:ring-offset-2 ${
                         i === currentStep
                           ? "bg-interactive scale-110"
                           : i < currentStep
@@ -411,12 +445,12 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                 <Button
                   size="sm"
                   onClick={handleNext}
-                  className="gap-1 bg-interactive hover:bg-interactive/90 min-w-[120px]"
+                  className="gap-1 bg-interactive hover:bg-interactive/90 min-w-[110px] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-interactive"
                 >
                   {currentStep === steps.length - 1 ? (
                     <>
                       <Play className="w-4 h-4" />
-                      Start Exploring
+                      Start
                     </>
                   ) : (
                     <>
@@ -427,6 +461,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                 </Button>
               </div>
             </Card>
+
           </motion.div>
         </motion.div>
       )}
