@@ -396,24 +396,40 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
               </CardContent>
 
               {/* Footer */}
-              <div className="flex items-center justify-between gap-4 px-6 py-4 border-t bg-muted/30">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handlePrev}
-                  disabled={currentStep === 0}
-                  className="gap-1"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back
-                </Button>
+              <div className="shrink-0 flex items-center justify-between gap-2 px-4 sm:px-6 py-3 border-t bg-muted/30">
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePrev}
+                    disabled={currentStep === 0}
+                    className="gap-1 focus-visible:ring-2 focus-visible:ring-interactive"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onSkip}
+                    className="gap-1 text-muted-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-interactive"
+                  >
+                    <SkipForward className="w-4 h-4" />
+                    <span className="hidden sm:inline">Skip tutorial</span>
+                    <span className="sm:hidden">Skip</span>
+                  </Button>
+                </div>
 
-                <div className="flex gap-1.5">
-                  {steps.map((_, i) => (
+                <div className="flex gap-1.5" role="tablist" aria-label="Onboarding steps">
+                  {steps.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => setCurrentStep(i)}
-                      className={`w-2.5 h-2.5 rounded-full transition-all ${
+                      role="tab"
+                      aria-label={`Go to step ${i + 1}: ${s.title}`}
+                      aria-current={i === currentStep ? "step" : undefined}
+                      aria-selected={i === currentStep}
+                      className={`w-2.5 h-2.5 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-interactive focus-visible:ring-offset-2 ${
                         i === currentStep
                           ? "bg-interactive scale-110"
                           : i < currentStep
@@ -427,12 +443,12 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                 <Button
                   size="sm"
                   onClick={handleNext}
-                  className="gap-1 bg-interactive hover:bg-interactive/90 min-w-[120px]"
+                  className="gap-1 bg-interactive hover:bg-interactive/90 min-w-[110px] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-interactive"
                 >
                   {currentStep === steps.length - 1 ? (
                     <>
                       <Play className="w-4 h-4" />
-                      Start Exploring
+                      Start
                     </>
                   ) : (
                     <>
@@ -443,6 +459,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                 </Button>
               </div>
             </Card>
+
           </motion.div>
         </motion.div>
       )}
