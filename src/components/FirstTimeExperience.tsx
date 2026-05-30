@@ -245,9 +245,10 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                           ].map(c => (
                             <div key={c.names} className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-border">
                               <div className="flex items-center gap-3">
-                                <div className="flex -space-x-2 text-xl">
+                                <div className="flex -space-x-2 text-xl" aria-hidden="true">
                                   {c.partners.map((p, i) => <span key={i}>{p}</span>)}
                                 </div>
+
                                 <p className="text-sm font-medium">{c.names}</p>
                               </div>
                               <div className="flex items-center gap-3">
