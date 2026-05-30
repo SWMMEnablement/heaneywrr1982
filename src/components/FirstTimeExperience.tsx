@@ -268,9 +268,10 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                              <div className="flex -space-x-2 text-2xl">
+                              <div className="flex -space-x-2 text-2xl" aria-hidden="true">
                                 <span>🏘️</span><span>🏔️</span><span>🌊</span>
                               </div>
+
                               <div>
                                 <p className="font-bold text-lg">All Three Together</p>
                                 <p className="text-sm text-muted-foreground">
