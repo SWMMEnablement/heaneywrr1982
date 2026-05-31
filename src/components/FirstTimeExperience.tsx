@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Droplets, Users, ArrowRight, ArrowLeft, CheckCircle, 
   X, Lightbulb, Calculator, DollarSign, HelpCircle,
-  Play, SkipForward
+  Play, SkipForward, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { GlossaryTermLink } from "./Glossary";
 
 interface FirstTimeExperienceProps {
