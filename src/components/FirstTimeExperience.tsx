@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   Droplets, Users, ArrowRight, ArrowLeft, CheckCircle, 
   X, Lightbulb, Calculator, DollarSign, HelpCircle,
-  Play, SkipForward
+  Play, SkipForward, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { GlossaryTermLink } from "./Glossary";
 
 interface FirstTimeExperienceProps {
@@ -99,7 +100,8 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-2xl max-h-[90dvh]"
           >
-            <Card className="overflow-hidden shadow-2xl border-2 border-primary/20 flex flex-col max-h-[90dvh]">
+            <TooltipProvider>
+              <Card className="overflow-hidden shadow-2xl border-2 border-primary/20 flex flex-col max-h-[90dvh]">
               {/* Header */}
               <div className="shrink-0 bg-gradient-to-r from-primary via-primary/90 to-interactive px-6 py-4 text-primary-foreground">
                 <div className="flex items-center justify-between mb-3 gap-3">
@@ -216,7 +218,16 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="text-2xl font-bold font-mono">${town.cost}M</p>
+                                {town.name === "Riverside" ? (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="text-2xl font-bold font-mono cursor-help underline decoration-dotted underline-offset-4 decoration-interactive/50">${town.cost}M</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">M = million USD</TooltipContent>
+                                  </Tooltip>
+                                ) : (
+                                  <p className="text-2xl font-bold font-mono">${town.cost}M</p>
+                                )}
                               </div>
                             </motion.div>
                           ))}
@@ -252,7 +263,16 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                                 <p className="text-sm font-medium">{c.names}</p>
                               </div>
                               <div className="flex items-center gap-3">
-                                <p className="font-mono font-bold">${c.cost}M</p>
+                                {c.names === "Riverside + Hilltop" ? (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <p className="font-mono font-bold cursor-help underline decoration-dotted underline-offset-4 decoration-interactive/50">${c.cost}M</p>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">M = million USD</TooltipContent>
+                                  </Tooltip>
+                                ) : (
+                                  <p className="font-mono font-bold">${c.cost}M</p>
+                                )}
                                 <span className="text-xs px-2 py-1 rounded-full bg-interactive/10 text-interactive font-medium">
                                   saves ${c.savings}M
                                 </span>
@@ -304,8 +324,8 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                     {currentStep === 3 && (
                       <div className="space-y-5">
                         <p className="text-muted-foreground leading-relaxed">
-                          Cooperation creates <span className="text-interactive font-semibold">$5M in savings</span>. 
-                          The question is: how do we divide the <span className="text-foreground font-medium">$7M bill</span> so everyone feels it's fair?
+                          Cooperation creates <Tooltip><TooltipTrigger asChild><span className="text-interactive font-semibold cursor-help underline decoration-dotted underline-offset-4 decoration-interactive/50">$5M in savings</span></TooltipTrigger><TooltipContent side="top">M = million USD</TooltipContent></Tooltip>. 
+                          The question is: how do we divide the <Tooltip><TooltipTrigger asChild><span className="text-foreground font-medium cursor-help underline decoration-dotted underline-offset-4 decoration-interactive/50">$7M bill</span></TooltipTrigger><TooltipContent side="top">M = million USD</TooltipContent></Tooltip> so everyone feels it's fair?
                         </p>
 
                         <div className="p-4 rounded-xl bg-accent/10 border border-accent/20">
@@ -461,6 +481,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                 </Button>
               </div>
             </Card>
+            </TooltipProvider>
 
           </motion.div>
         </motion.div>
