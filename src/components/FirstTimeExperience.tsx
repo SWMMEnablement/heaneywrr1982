@@ -481,6 +481,7 @@ const FirstTimeExperience = ({ onComplete, onSkip }: FirstTimeExperienceProps) =
                 </Button>
               </div>
             </Card>
+            </TooltipProvider>
 
           </motion.div>
         </motion.div>
