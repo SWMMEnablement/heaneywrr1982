@@ -96,134 +96,34 @@ const CoreVisualization = ({
     return allocation.map(v => v / total);
   }, []);
 
-  // Calculate core constraints
+  // Exact core polygon via half-plane clipping (no grid sampling — thin or
+  // degenerate cores are reported correctly, and lookups are id-aware)
+  const corePolygon = useMemo(
+    () => computeCorePolygon(participants, coalitions, grandCoalitionCost),
+    [participants, coalitions, grandCoalitionCost]
+  );
+
   const coreConstraints = useMemo(() => {
-    const n = participants.length;
-    if (n !== 3) return { vertices: [], isFeasible: false };
-
-    const c1 = participants[0].independentCost;
-    const c2 = participants[1].independentCost;
-    const c3 = participants[2].independentCost;
-    
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
-
-    const C = grandCoalitionCost;
-
-    // Core constraints for a 3-player cost game
-    const constraints = [
-      { type: 'individual', player: 1, bound: c1 },
-      { type: 'individual', player: 2, bound: c2 },
-      { type: 'individual', player: 3, bound: c3 },
-      { type: 'coalition', players: [1, 2], bound: c12 },
-      { type: 'coalition', players: [1, 3], bound: c13 },
-      { type: 'coalition', players: [2, 3], bound: c23 },
-    ];
-
-    // Generate core polygon vertices using constraint intersection
-    const coreVertices: number[][] = [];
-    const step = 0.02;
-    
-    for (let x1 = 0; x1 <= C; x1 += step * C) {
-      for (let x2 = 0; x2 <= C - x1; x2 += step * C) {
-        const x3 = C - x1 - x2;
-        if (x3 < 0) continue;
-        
-        // Check all constraints
-        if (x1 > c1 + 0.001) continue;
-        if (x2 > c2 + 0.001) continue;
-        if (x3 > c3 + 0.001) continue;
-        if (x1 + x2 > c12 + 0.001) continue;
-        if (x1 + x3 > c13 + 0.001) continue;
-        if (x2 + x3 > c23 + 0.001) continue;
-        
-        coreVertices.push([x1, x2, x3]);
-      }
-    }
-
-    // Compute convex hull of feasible points for polygon
-    const points = coreVertices.map(v => {
-      const bary = allocationToBarycentric(v);
-      return barycentricToCartesian(bary);
-    });
-
-    // Simple convex hull using gift wrapping
-    const computeConvexHull = (pts: { x: number; y: number }[]) => {
-      if (pts.length < 3) return pts;
-      
-      const sorted = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
-      const cross = (o: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) =>
-        (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-      
-      const lower: { x: number; y: number }[] = [];
-      for (const p of sorted) {
-        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
-          lower.pop();
-        }
-        lower.push(p);
-      }
-      
-      const upper: { x: number; y: number }[] = [];
-      for (let i = sorted.length - 1; i >= 0; i--) {
-        const p = sorted[i];
-        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
-          upper.pop();
-        }
-        upper.push(p);
-      }
-      
-      lower.pop();
-      upper.pop();
-      return [...lower, ...upper];
-    };
-
-    const hull = computeConvexHull(points);
-    
+    const points = corePolygon.vertices.map(v =>
+      barycentricToCartesian(allocationToBarycentric(v))
+    );
     return {
-      vertices: hull,
-      isFeasible: hull.length >= 3,
-      constraints,
+      vertices: points,
+      status: corePolygon.status,
+      isFeasible: corePolygon.status !== "empty",
     };
-  }, [participants, coalitions, grandCoalitionCost, allocationToBarycentric, barycentricToCartesian]);
+  }, [corePolygon, allocationToBarycentric, barycentricToCartesian]);
 
-  // Check if a point is in the core
+  // Check if a point is in the core (id-aware lookups)
   const isPointInCore = useCallback((x: number, y: number, C: number) => {
-    const c1 = participants[0]?.independentCost ?? 0;
-    const c2 = participants[1]?.independentCost ?? 0;
-    const c3 = participants[2]?.independentCost ?? 0;
-    
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
+    if (participants.length !== 3) return false;
+    const [p1, p2, p3] = participants;
+    const c1 = p1.independentCost;
+    const c2 = p2.independentCost;
+    const c3 = p3.independentCost;
+    const c12 = getCoalitionCost([p1.id, p2.id], participants, coalitions);
+    const c13 = getCoalitionCost([p1.id, p3.id], participants, coalitions);
+    const c23 = getCoalitionCost([p2.id, p3.id], participants, coalitions);
 
     const bary = cartesianToBarycentric(x, y);
     const x1 = bary[0] * C;
