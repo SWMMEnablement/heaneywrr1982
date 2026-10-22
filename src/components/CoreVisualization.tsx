@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Triangle, Target, Info, Eye, EyeOff, Move, MousePointer, Play, RotateCcw } from "lucide-react";
 import CoreStoryMode from "./CoreStoryMode";
 import ContextualQuizPrompt from "./ContextualQuizPrompt";
+import { computeCorePolygon } from "@/lib/core-geometry";
+import { getCoalitionCost } from "@/lib/steps-helpers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
@@ -151,92 +153,16 @@ const CoreVisualization = ({
     return barycentricToCartesian(bary);
   }, [shapleyValues, allocationToBarycentric, barycentricToCartesian]);
 
+  // MCRS allocation point
+  const mcrsPoint = useMemo(() => {
+    const bary = allocationToBarycentric(mcrsAllocations);
+    return barycentricToCartesian(bary);
+  }, [mcrsAllocations, allocationToBarycentric, barycentricToCartesian]);
+
   // Equal split point (centroid)
   const centroid = barycentricToCartesian([1/3, 1/3, 1/3]);
 
-  // Calculate Nucleolus
-  const nucleolusValues = useMemo(() => {
-    const n = participants.length;
-    if (n !== 3) return [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
-
-    const c1 = participants[0].independentCost;
-    const c2 = participants[1].independentCost;
-    const c3 = participants[2].independentCost;
-    const C = grandCoalitionCost;
-
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
-
-    let x1 = C / 3;
-    let x2 = C / 3;
-    let x3 = C / 3;
-
-    const iterations = 100;
-    const step = 0.01;
-
-    for (let iter = 0; iter < iterations; iter++) {
-      const excesses = [
-        { type: 'x1', value: c1 - x1 },
-        { type: 'x2', value: c2 - x2 },
-        { type: 'x3', value: c3 - x3 },
-        { type: 'x12', value: c12 - x1 - x2 },
-        { type: 'x13', value: c13 - x1 - x3 },
-        { type: 'x23', value: c23 - x2 - x3 },
-      ];
-
-      const minExcess = Math.min(...excesses.map(e => e.value));
-      const tightConstraints = excesses.filter(e => Math.abs(e.value - minExcess) < step * 2);
-
-      let dx1 = 0, dx2 = 0, dx3 = 0;
-      
-      for (const tc of tightConstraints) {
-        switch (tc.type) {
-          case 'x1': dx1 -= step; break;
-          case 'x2': dx2 -= step; break;
-          case 'x3': dx3 -= step; break;
-          case 'x12': dx1 -= step / 2; dx2 -= step / 2; break;
-          case 'x13': dx1 -= step / 2; dx3 -= step / 2; break;
-          case 'x23': dx2 -= step / 2; dx3 -= step / 2; break;
-        }
-      }
-
-      const total = dx1 + dx2 + dx3;
-      dx1 -= total / 3;
-      dx2 -= total / 3;
-      dx3 -= total / 3;
-
-      x1 += dx1;
-      x2 += dx2;
-      x3 += dx3;
-
-      const sum = x1 + x2 + x3;
-      x1 = x1 * C / sum;
-      x2 = x2 * C / sum;
-      x3 = x3 * C / sum;
-
-      x1 = Math.max(0, x1);
-      x2 = Math.max(0, x2);
-      x3 = Math.max(0, x3);
-    }
-
-    return [x1, x2, x3];
-  }, [participants, coalitions, grandCoalitionCost]);
-
+  // Nucleolus comes from the shared calculation engine (exact sequential LP)
   const nucleolusPoint = useMemo(() => {
     const bary = allocationToBarycentric(nucleolusValues);
     return barycentricToCartesian(bary);
