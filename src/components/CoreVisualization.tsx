@@ -744,6 +744,46 @@ const CoreVisualization = ({
               />
             </motion.g>
 
+            {/* MCRS allocation point - Draggable */}
+            <motion.g
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.75, type: "spring" }}
+              style={{ cursor: draggingPoint === 'mcrs' ? 'grabbing' : 'grab' }}
+              onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('mcrs'); }}
+              onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'mcrs', x: getDraggedPosition('mcrs').x, y: getDraggedPosition('mcrs').y })}
+              onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
+            >
+              <circle
+                cx={getDraggedPosition('mcrs').x}
+                cy={getDraggedPosition('mcrs').y}
+                r={hoveredPoint?.type === 'mcrs' || draggingPoint === 'mcrs' ? 12 : 8}
+                fill={isDraggedPointInCore('mcrs') ? "hsl(var(--mcrs))" : "hsl(var(--destructive))"}
+                stroke="white"
+                strokeWidth="2"
+                filter={draggingPoint === 'mcrs' ? "url(#strongGlow)" : "url(#glow)"}
+                className="transition-all duration-200"
+              />
+              {dragOffsets.mcrs.x === 0 && dragOffsets.mcrs.y === 0 && (
+                <text
+                  x={getDraggedPosition('mcrs').x - 16}
+                  y={getDraggedPosition('mcrs').y + 4}
+                  textAnchor="end"
+                  className="text-xs font-medium fill-mcrs pointer-events-none"
+                >
+                  MCRS
+                </text>
+              )}
+              <Move
+                x={getDraggedPosition('mcrs').x - 5}
+                y={getDraggedPosition('mcrs').y - 5}
+                width={10}
+                height={10}
+                className="pointer-events-none"
+                style={{ color: 'white', opacity: 0.8 }}
+              />
+            </motion.g>
+
             {/* Shapley allocation point - Draggable */}
             <motion.g
               initial={{ scale: 0 }}
@@ -849,9 +889,10 @@ const CoreVisualization = ({
                   textAnchor="middle"
                   className="text-xs font-semibold fill-foreground"
                 >
-                  {hoveredPoint.type === 'scrb' ? 'SCRB Allocation' : 
+                  {hoveredPoint.type === 'scrb' ? 'SCRB Allocation' :
+                   hoveredPoint.type === 'mcrs' ? 'MCRS Allocation' :
                    hoveredPoint.type === 'shapley' ? 'Shapley Value' :
-                   hoveredPoint.type === 'nucleolus' ? 'Nucleolus' : 
+                   hoveredPoint.type === 'nucleolus' ? 'Nucleolus' :
                    hoveredPoint.type === 'custom' ? 'Custom Position' : 'Equal Split'}
                 </text>
                 <line
@@ -863,8 +904,9 @@ const CoreVisualization = ({
                   strokeWidth="1"
                 />
                 {participants.map((p, i) => {
-                  const values = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
+                   const values = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
                                  hoveredPoint.type === 'scrb' ? scrbAllocations :
+                                 hoveredPoint.type === 'mcrs' ? mcrsAllocations :
                                  hoveredPoint.type === 'shapley' ? shapleyValues :
                                  hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                                  [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
@@ -886,6 +928,7 @@ const CoreVisualization = ({
                 >
                   Total: {(hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
                           hoveredPoint.type === 'scrb' ? scrbAllocations :
+                          hoveredPoint.type === 'mcrs' ? mcrsAllocations :
                           hoveredPoint.type === 'shapley' ? shapleyValues :
                           hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                           [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3])
@@ -977,6 +1020,10 @@ const CoreVisualization = ({
               <span className="text-muted-foreground">SCRB Method</span>
             </div>
             <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-mcrs" />
+              <span className="text-muted-foreground">MCRS Method</span>
+            </div>
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-interactive" />
               <span className="text-muted-foreground">Shapley Value</span>
             </div>
@@ -1017,9 +1064,11 @@ const CoreVisualization = ({
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-interactive" />
             <span className="text-sm font-medium">
-              {coreConstraints.isFeasible 
+              {coreConstraints.status === 'exists'
                 ? "Core exists — stable allocations available"
-                : "Core may be empty — check constraint feasibility"
+                : coreConstraints.status === 'degenerate'
+                ? "Core is a single point or line — exactly one stable allocation"
+                : "Core is empty — no stable allocation exists"
               }
             </span>
           </div>
