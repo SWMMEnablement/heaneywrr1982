@@ -14,7 +14,6 @@ import CoreVisualization from "./CoreVisualization";
 import CompareChart from "./CompareChart";
 import OnboardingTour from "./OnboardingTour";
 import ExampleBank, { Scenario } from "./ExampleBank";
-import ParallelCoordinatesChart from "./ParallelCoordinatesChart";
 import { lazy, Suspense } from "react";
 const TetrahedronVisualization = lazy(() => import("./TetrahedronVisualization"));
 import ActiveLearningChallenges from "./ActiveLearningChallenges";
@@ -110,6 +109,7 @@ const CostCalculator = () => {
   };
 
   const handleSelectScenario = (scenario: Scenario) => {
+    setPlayerMode(scenario.playerCount);
     setParticipants(scenario.participants);
     setCoalitions(scenario.coalitions);
     setShowExamples(false);
@@ -128,18 +128,8 @@ const CostCalculator = () => {
   };
 
   const resetToDefault = () => {
-    // Reset to Three Towns scenario for continuity
-    setParticipants([
-      { id: 1, name: "Riverside", independentCost: 2 },
-      { id: 2, name: "Hilltop", independentCost: 4 },
-      { id: 3, name: "Lakeview", independentCost: 6 },
-    ]);
-    setCoalitions([
-      { participants: [1, 2], cost: 5 },
-      { participants: [1, 3], cost: 6 },
-      { participants: [2, 3], cost: 6 },
-      { participants: [1, 2, 3], cost: 7 },
-    ]);
+    // Reset to the default scenario for the CURRENT player mode
+    switchPlayerMode(playerMode);
   };
 
   // Calculate cost allocations using extracted pure functions
@@ -147,6 +137,16 @@ const CostCalculator = () => {
 
   // Check subadditivity violations
   const subadditivityViolations = useMemo(() => checkSubadditivity(participants, coalitions), [participants, coalitions]);
+
+  // Slider ceiling follows the data (at least 20, otherwise 1.5x the largest cost)
+  const sliderMax = useMemo(() => {
+    const maxCost = Math.max(
+      20,
+      ...participants.map(p => p.independentCost),
+      ...coalitions.map(c => c.cost)
+    );
+    return Math.ceil(maxCost * 1.5);
+  }, [participants, coalitions]);
 
   return (
     <section id="calculator" className="py-20 px-6">
@@ -309,7 +309,7 @@ const CostCalculator = () => {
                             value={[p.independentCost]}
                             onValueChange={(value) => updateParticipant(p.id, 'independentCost', value[0])}
                             min={0}
-                            max={20}
+                            max={sliderMax}
                             step={0.5}
                             className="flex-1"
                           />
@@ -451,19 +451,6 @@ const CostCalculator = () => {
                           <span className="inline-flex items-center gap-1">
                             <div className="w-2 h-2 rounded-full bg-accent" />
                             Nucleolus
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20 cursor-help">
-                                  <AlertTriangle className="w-2.5 h-2.5" />
-                                  Approx
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent className="max-w-xs">
-                                <p className="text-xs">
-                                  The Nucleolus uses an iterative heuristic approximation (100 iterations, step=0.01) rather than the exact LP-based formulation. Results are reasonable for the default scenario but may be inaccurate for other inputs.
-                                </p>
-                              </TooltipContent>
-                            </Tooltip>
                           </span>
                         </th>
                         <th className="py-3 px-2 text-right font-medium">
@@ -553,11 +540,7 @@ const CostCalculator = () => {
                     <div className="w-2 h-2 rounded-full bg-accent mt-1 shrink-0" />
                     <div>
                       <span className="font-medium text-accent">Nucleolus</span>
-                      <span className="inline-flex items-center gap-0.5 ml-1 px-1 py-0 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20">
-                        <AlertTriangle className="w-2 h-2" />
-                        Approx
-                      </span>
-                      <p>Minimizes maximum coalition dissatisfaction</p>
+                      <p>Minimizes maximum coalition dissatisfaction (exact LP)</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
@@ -946,13 +929,33 @@ const CostCalculator = () => {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8"
         >
-          <CoreVisualization
-            participants={participants}
-            coalitions={coalitions}
-            scrbAllocations={calculations.scrbAllocations}
-            shapleyValues={calculations.shapleyValues}
-            grandCoalitionCost={calculations.grandCoalitionCost}
-          />
+          {playerMode === 3 ? (
+            <CoreVisualization
+              participants={participants}
+              coalitions={coalitions}
+              scrbAllocations={calculations.scrbAllocations}
+              mcrsAllocations={calculations.mcrsAllocations}
+              shapleyValues={calculations.shapleyValues}
+              nucleolusValues={calculations.nucleolusValues}
+              grandCoalitionCost={calculations.grandCoalitionCost}
+            />
+          ) : (
+            <Suspense fallback={
+              <Card className="card-elevated"><CardContent className="h-[400px] flex items-center justify-center text-muted-foreground">Loading 3D visualization…</CardContent></Card>
+            }>
+              <TetrahedronVisualization
+                participants={participants}
+                allocations={{
+                  scrb: calculations.scrbAllocations,
+                  mcrs: calculations.mcrsAllocations,
+                  shapley: calculations.shapleyValues,
+                  nucleolus: calculations.nucleolusValues,
+                  equal: calculations.equalSplit,
+                }}
+                grandCoalitionCost={calculations.grandCoalitionCost}
+              />
+            </Suspense>
+          )}
         </motion.div>
 
         {/* Active Learning Challenges */}
