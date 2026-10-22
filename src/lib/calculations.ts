@@ -296,7 +296,7 @@ function calculateNucleolus(
           coeffs: sumCoeffs(subsetIndices[t], n),
           rhs: costs[t] - epsilonStar,
         }));
-      const capObj = sumCoeffs(subsetIndices[k], n).map(v => -v); // min x(S_k)
+      const capObj = sumCoeffs(subsetIndices[k], n); // minimize x(S_k)
       const capRes = solveLP(n, capObj, "min", capIneq, capEqualities);
       const maxExcess = capRes.feasible ? costs[k] - capRes.value : epsilonStar;
       if (maxExcess <= epsilonStar + 1e-6) {
