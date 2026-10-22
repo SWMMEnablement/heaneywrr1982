@@ -105,22 +105,14 @@ export function solveLP(
     }
   };
 
-  const eqCount = equalities.length;
-
-  if (eqCount <= numVars) {
-    // All equalities are active; choose the remaining constraints from inequalities.
-    const need = numVars - eqCount;
-    for (const combo of combinations(inequalities.length, need)) {
-      const system = [...equalities, ...combo.map(i => inequalities[i])];
-      consider(solveSquare(system.map(c => c.coeffs), system.map(c => c.rhs)));
-    }
-  } else {
-    // Overdetermined equalities: any numVars of them pin the point; the
-    // feasibility check validates consistency with the rest.
-    for (const combo of combinations(eqCount, numVars)) {
-      const system = combo.map(i => equalities[i]);
-      consider(solveSquare(system.map(c => c.coeffs), system.map(c => c.rhs)));
-    }
+  // Enumerate all numVars-sized subsets of the full constraint set. Equalities
+  // may be mutually redundant (e.g. in the sequential nucleolus LPs), so we
+  // cannot force them all into every system — the feasibility check enforces
+  // them instead. Problem sizes here are tiny (≤ 31 constraints, ≤ 5 vars).
+  const all = [...equalities, ...inequalities];
+  for (const combo of combinations(all.length, numVars)) {
+    const system = combo.map(i => all[i]);
+    consider(solveSquare(system.map(c => c.coeffs), system.map(c => c.rhs)));
   }
 
   return best;

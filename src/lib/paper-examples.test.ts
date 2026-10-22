@@ -138,11 +138,11 @@ describe("Paper p. 481 Table 1 — four-person game", () => {
     expect(result.mcrsUpperBounds[3]).toBeCloseTo(8, 4);
   });
 
-  it("MCRS solution = (1.46, 1.84, 2.31, 6.39)", () => {
-    expect(result.mcrsAllocations[0]).toBeCloseTo(1.46, 2);
-    expect(result.mcrsAllocations[1]).toBeCloseTo(1.84, 2);
-    expect(result.mcrsAllocations[2]).toBeCloseTo(2.31, 2);
-    expect(result.mcrsAllocations[3]).toBeCloseTo(6.39, 2);
+  it("MCRS solution = (1.46, 1.84, 2.31, 6.39) — exactly (19, 24, 30, 83)/13", () => {
+    expect(result.mcrsAllocations[0]).toBeCloseTo(19 / 13, 4);
+    expect(result.mcrsAllocations[1]).toBeCloseTo(24 / 13, 4);
+    expect(result.mcrsAllocations[2]).toBeCloseTo(30 / 13, 4);
+    expect(result.mcrsAllocations[3]).toBeCloseTo(83 / 13, 4);
   });
 
   it("all methods sum to c(N) = 12", () => {
