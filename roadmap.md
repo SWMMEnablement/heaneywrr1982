@@ -7,34 +7,37 @@
 - [x] 1.4 Id-agnostic coalition lookups
 - [x] 1.5 Missing coalition cost → no-cooperation fallback
 
-## High (broken features)
-- [ ] 2.1 Render TetrahedronVisualization for 4-player mode (currently never used); add MCRS dot; fix colours
-- [ ] 2.2 Replace drei `<Text>` with `<Html>` labels (no runtime font fetch)
-- [ ] 2.3 Move Google Fonts @import to line 1 of index.css
-- [ ] 2.4 Reset button respects current playerMode; scenario select sets mode
-- [ ] 2.5 Scroll-spy: pick section with largest offsetTop ≤ scrollY
-- [ ] 2.6 Add MCRS to Compare mode selects
-- [ ] 2.7 Compare tie key: 'tie' not 'equal'
-- [ ] 2.8 Story-mode highlight: exact set comparison, id-aware
+## High (broken features) — DONE
+- [x] 2.1 Tetrahedron rendered for 4-player mode; MCRS dot added; colours matched
+- [x] 2.2 drei `<Text>` → `<Html>` labels (no runtime font fetch)
+- [x] 2.3 Google Fonts @import moved to line 1 of index.css
+- [x] 2.4 Reset respects current playerMode; scenario select sets mode
+- [x] 2.5 Scroll-spy uses page order
+- [x] 2.6 MCRS in Compare mode selects
+- [x] 2.7 Compare tie key: 'tie' not 'equal'
+- [x] 2.8 Story-mode highlight: exact id-aware match
 
-## Medium (content)
-- [ ] CoreStoryMode: correct "SCRB always in core" claim → MCRS + nucleolus
-- [ ] ShowStepsPanel: real MCRS steps (eqs. 20–23, θ when core empty)
-- [ ] CheatSheet: add MCRS card + row
-- [ ] Compare: relabel "Total Variance" → sum of absolute differences
-- [ ] index.html: real title/meta/OG
-- [ ] Slider ceiling follows data (Airport c(3)=45)
-- [ ] savingsPercent divide-by-zero guard
-- [ ] ExampleBank: add paper's Table 1 four-person game (4-player default) + p.480 empty-core game
+## Medium (content) — DONE
+- [x] CoreStoryMode: SCRB claim corrected (MCRS + nucleolus are the in-core methods)
+- [x] ShowStepsPanel: real MCRS steps from engine bounds (eqs. 20–23, θ note when core empty)
+- [x] CheatSheet: MCRS card + comparison row
+- [x] Compare: "Total Variance" → "Total Abs. Difference"
+- [x] index.html: real title/meta/OG
+- [x] Slider ceiling follows data (1.5× max cost, min 20)
+- [x] savingsPercent divide-by-zero guard (in calculations.ts)
+- [x] ExampleBank: paper's Table 1 game (now 4-player default) + p.480 empty-core game
 
-## Low (hygiene)
-- [ ] ESLint: require() in tailwind.config.ts; empty interface in ui/textarea.tsx
-- [ ] CoreVisualization: vertices as module constants
-- [ ] TetrahedronWireframe: memoise THREE.Line objects
-- [ ] Remove dead ParallelCoordinatesChart import
-- [ ] Tests: paper-examples.test.ts (pin printed answers), core-geometry.test.ts, fix weak expectations
+## Low (hygiene) — DONE
+- [x] ESLint: tailwind.config.ts import; textarea.tsx type alias
+- [x] CoreVisualization: vertices as module constants
+- [x] TetrahedronWireframe: memoised THREE.Line objects
+- [x] Dead ParallelCoordinatesChart import removed
+- [x] Tests: paper-examples.test.ts, core-geometry.test.ts, corrected expectations
 
-## Verification
-- [ ] Extract exact example numbers from bundled paper PDF (p.479, p.480, Table 1)
-- [ ] All tests pass; build clean
-- [ ] Update memory: nucleolus is now exact (remove "Approximate badge" rule)
+## Verification — DONE
+- [x] Extracted exact example numbers from bundled paper PDF (p.478–481)
+- [x] 78 tests pass; build clean
+- [x] Memory updated: nucleolus/MCRS now exact
+
+## Deferred (review §6 recommendations, not requested fixes)
+- Dark mode toggle, touch drag, mobile SVG viewBox, shareable URLs, live quiz
