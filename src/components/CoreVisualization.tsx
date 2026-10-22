@@ -558,7 +558,7 @@ const CoreVisualization = ({
 
             {/* Constraint boundary lines - clickable */}
             {showConstraints && constraintLines.map((line, i) => {
-              const isHighlighted = isConstraintHighlighted(line.constraintKey);
+              const isHighlighted = isConstraintHighlighted(line);
               const isHovered = highlightedConstraint === line.constraintKey;
               const isStoryHighlight = isStoryModeActive && isHighlighted;
               
@@ -626,8 +626,8 @@ const CoreVisualization = ({
               );
             })}
 
-            {/* Core region */}
-            {coreConstraints.isFeasible && (
+            {/* Core region — area polygon, or a marker for a degenerate (point/line) core */}
+            {coreConstraints.status === 'exists' && (
               <motion.path
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -639,6 +639,36 @@ const CoreVisualization = ({
                 strokeLinejoin="round"
                 filter="url(#glow)"
               />
+            )}
+            {coreConstraints.status === 'degenerate' && coreConstraints.vertices.length > 0 && (
+              <motion.g
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                {coreConstraints.vertices.length === 1 ? (
+                  <circle
+                    cx={coreConstraints.vertices[0].x}
+                    cy={coreConstraints.vertices[0].y}
+                    r={6}
+                    fill="url(#coreGradient)"
+                    stroke="hsl(var(--interactive))"
+                    strokeWidth="2"
+                    filter="url(#glow)"
+                  />
+                ) : (
+                  <line
+                    x1={coreConstraints.vertices[0].x}
+                    y1={coreConstraints.vertices[0].y}
+                    x2={coreConstraints.vertices[coreConstraints.vertices.length - 1].x}
+                    y2={coreConstraints.vertices[coreConstraints.vertices.length - 1].y}
+                    stroke="hsl(var(--interactive))"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    filter="url(#glow)"
+                  />
+                )}
+              </motion.g>
             )}
 
             {/* Vertex labels */}
