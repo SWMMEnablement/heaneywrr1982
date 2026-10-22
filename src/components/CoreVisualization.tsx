@@ -230,34 +230,24 @@ const CoreVisualization = ({
   // Calculate constraint boundary lines
   const constraintLines = useMemo(() => {
     const C = grandCoalitionCost;
-    if (C === 0) return [];
+    if (C === 0 || participants.length !== 3) return [];
 
-    const c1 = participants[0]?.independentCost ?? 0;
-    const c2 = participants[1]?.independentCost ?? 0;
-    const c3 = participants[2]?.independentCost ?? 0;
-    
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
+    const [p1, p2, p3] = participants;
+    const c1 = p1.independentCost;
+    const c2 = p2.independentCost;
+    const c3 = p3.independentCost;
 
-    const lines: { 
-      x1: number; y1: number; x2: number; y2: number; 
-      label: string; 
+    // Id-aware coalition lookups (no hard-coded 1/2/3)
+    const c12 = getCoalitionCost([p1.id, p2.id], participants, coalitions);
+    const c13 = getCoalitionCost([p1.id, p3.id], participants, coalitions);
+    const c23 = getCoalitionCost([p2.id, p3.id], participants, coalitions);
+
+    const lines: {
+      x1: number; y1: number; x2: number; y2: number;
+      label: string;
       constraintKey: string;
+      /** Exact key story mode produces for this constraint: `x` + joined ids */
+      storyKey: string;
       type: 'individual' | 'coalition';
       color: string;
     }[] = [];
@@ -269,7 +259,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([x1, C - x1, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁ ≤ ${c1}`, constraintKey: 'x₁', type: 'individual', color: 'hsl(var(--chart-1))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁ ≤ ${c1}`, constraintKey: 'x₁', storyKey: `x${p1.id}`, type: 'individual', color: 'hsl(var(--chart-1))' });
     }
 
     // Individual constraint x2 = c2
@@ -279,7 +269,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x2, x2, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂ ≤ ${c2}`, constraintKey: 'x₂', type: 'individual', color: 'hsl(var(--chart-2))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂ ≤ ${c2}`, constraintKey: 'x₂', storyKey: `x${p2.id}`, type: 'individual', color: 'hsl(var(--chart-2))' });
     }
 
     // Individual constraint x3 = c3
@@ -289,7 +279,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x3, 0, x3]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₃ ≤ ${c3}`, constraintKey: 'x₃', type: 'individual', color: 'hsl(var(--chart-3))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₃ ≤ ${c3}`, constraintKey: 'x₃', storyKey: `x${p3.id}`, type: 'individual', color: 'hsl(var(--chart-3))' });
     }
 
     // Coalition constraint x1 + x2 = c12
@@ -299,7 +289,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x3, 0, x3]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₂ ≤ ${c12}`, constraintKey: 'x₁+x₂', type: 'coalition', color: 'hsl(var(--chart-4))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₂ ≤ ${c12}`, constraintKey: 'x₁+x₂', storyKey: `x${p1.id}${p2.id}`, type: 'coalition', color: 'hsl(var(--chart-4))' });
     }
 
     // Coalition constraint x1 + x3 = c13
@@ -309,7 +299,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x2, x2, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₃ ≤ ${c13}`, constraintKey: 'x₁+x₃', type: 'coalition', color: 'hsl(var(--chart-5))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₃ ≤ ${c13}`, constraintKey: 'x₁+x₃', storyKey: `x${p1.id}${p3.id}`, type: 'coalition', color: 'hsl(var(--chart-5))' });
     }
 
     // Coalition constraint x2 + x3 = c23
@@ -319,7 +309,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([x1, C - x1, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂+x₃ ≤ ${c23}`, constraintKey: 'x₂+x₃', type: 'coalition', color: 'hsl(var(--accent))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂+x₃ ≤ ${c23}`, constraintKey: 'x₂+x₃', storyKey: `x${p2.id}${p3.id}`, type: 'coalition', color: 'hsl(var(--accent))' });
     }
 
     return lines;
