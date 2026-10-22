@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronRight, Eye, EyeOff, Calculator, ArrowRight, Plus, Equal, Divide, AlertTriangle } from "lucide-react";
+import { ChevronDown, ChevronRight, Eye, EyeOff, Calculator, ArrowRight, Plus, Equal, Divide } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -27,6 +27,11 @@ interface ShowStepsPanelProps {
     nonseparableCost: number;
     scrbAllocations: number[];
     mcrsAllocations: number[];
+    mcrsLowerBounds: number[];
+    mcrsUpperBounds: number[];
+    mcrsNonseparableCost: number;
+    coreEmpty: boolean;
+    coreRelaxationTheta: number;
     shapleyValues: number[];
     nucleolusValues: number[];
     grandCoalitionCost: number;
@@ -81,41 +86,25 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
     };
   });
 
-  // MCRS steps
+  // MCRS steps — read the core bounds straight from the engine (paper eqs. 20-23)
   const mcrsSteps = (() => {
-    const minimumCosts = participants.map(p => {
-      let minMarginal = p.independentCost;
-      for (const coalition of coalitions) {
-        if (!coalition.participants.includes(p.id) || coalition.participants.length < 2) continue;
-        const withoutIds = coalition.participants.filter(id => id !== p.id);
-        let costWithout: number;
-        if (withoutIds.length === 1) {
-          costWithout = participants.find(pp => pp.id === withoutIds[0])?.independentCost ?? 0;
-        } else {
-          const wc = coalitions.find(c =>
-            c.participants.length === withoutIds.length &&
-            withoutIds.every(id => c.participants.includes(id))
-          );
-          costWithout = wc?.cost ?? 0;
-        }
-        minMarginal = Math.min(minMarginal, coalition.cost - costWithout);
-      }
-      return Math.max(0, minMarginal);
+    const lower = calculations.mcrsLowerBounds;
+    const upper = calculations.mcrsUpperBounds;
+    const nsc = calculations.mcrsNonseparableCost;
+    const totalRange = participants.reduce((sum, _, i) => sum + Math.max(0, upper[i] - lower[i]), 0);
+
+    return participants.map((p, i) => {
+      const range = Math.max(0, upper[i] - lower[i]);
+      const beta = totalRange > 1e-9 ? range / totalRange : 0;
+      return {
+        participant: p,
+        lowerBound: lower[i],
+        upperBound: upper[i],
+        beta,
+        share: beta * nsc,
+        final: calculations.mcrsAllocations[i],
+      };
     });
-
-    const totalMin = minimumCosts.reduce((a, b) => a + b, 0);
-    const grandCost = coalitions.find(c => c.participants.length === n)?.cost ?? 0;
-    const remaining = grandCost - totalMin;
-    const totalIndep = participants.reduce((s, p) => s + p.independentCost, 0);
-
-    return participants.map((p, i) => ({
-      participant: p,
-      minimumCost: minimumCosts[i],
-      totalMinimumCosts: totalMin,
-      remainingSavings: remaining,
-      share: totalIndep > 0 ? (p.independentCost / totalIndep) * remaining : remaining / n,
-      final: calculations.mcrsAllocations[i],
-    }));
   })();
 
   return (
@@ -287,19 +276,25 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                   <div className="mt-3 p-4 rounded-lg bg-muted/50 border border-border space-y-4">
                     <p className="text-sm text-muted-foreground">
                       <span className="text-foreground font-medium">MCRS (Minimum Costs, Remaining Savings)</span> is Heaney & Dickinson's 
-                      proposed improvement over SCRB. Instead of separable costs, it uses each player's{" "}
-                      <span className="text-foreground font-medium">minimum marginal contribution</span> across all coalitions.
+                      proposed improvement over SCRB. It finds each player's{" "}
+                      <span className="text-foreground font-medium">minimum and maximum feasible cost within the Core</span> (via linear programs), 
+                      then prorates the nonseparable cost by the width of that feasible range.
+                      {calculations.coreEmpty && (
+                        <span className="block mt-2 text-destructive font-medium">
+                          The Core is empty for this game, so intermediate coalition costs were relaxed by θ = {calculations.coreRelaxationTheta.toFixed(4)} (paper's LP 19) until a core appeared.
+                        </span>
+                      )}
                     </p>
 
                     <div className="p-3 rounded-lg bg-background border border-border">
                       <p className="text-xs font-medium mb-2">Formula:</p>
                       <p className="font-mono text-sm">
-                        x<sub>i</sub> = MC<sub>i</sub> + (c(i) / Σc(j)) × RS
+                        x<sub>i</sub> = x<sub>i</sub><sup>min</sup> + β<sub>i</sub> × NSC
                       </p>
                       <div className="mt-2 text-xs text-muted-foreground space-y-1">
-                        <p>• MC<sub>i</sub> = min over all S containing i of [c(S) - c(S\{'{i}'})]</p>
-                        <p>• RS = Remaining Savings = c(N) - ΣMC = {mcrsSteps[0]?.remainingSavings.toFixed(2)}</p>
-                        <p>• Share proportional to standalone cost c(i)</p>
+                        <p>• x<sub>i</sub><sup>min</sup>, x<sub>i</sub><sup>max</sup> = min/max of x<sub>i</sub> over the Core (LP, paper eq. 20)</p>
+                        <p>• β<sub>i</sub> = (x<sub>i</sub><sup>max</sup> − x<sub>i</sub><sup>min</sup>) / Σ(x<sub>j</sub><sup>max</sup> − x<sub>j</sub><sup>min</sup>) (eq. 21)</p>
+                        <p>• NSC = c(N) − Σx<sub>j</sub><sup>min</sup> = {calculations.mcrsNonseparableCost.toFixed(2)} (eq. 22)</p>
                       </div>
                     </div>
                     
@@ -312,16 +307,16 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                             <span className="font-mono ml-2">{step.participant.independentCost}</span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">Minimum cost:</span>
-                            <span className="font-mono ml-2">{step.minimumCost.toFixed(2)}</span>
+                            <span className="text-muted-foreground">Core range:</span>
+                            <span className="font-mono ml-2">[{step.lowerBound.toFixed(2)}, {step.upperBound.toFixed(2)}]</span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">RS share:</span>
+                            <span className="text-muted-foreground">β share of NSC:</span>
                             <span className="font-mono ml-2">{step.share.toFixed(2)}</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-sm pt-1 border-t border-dashed border-border">
-                          <span className="font-mono">{step.minimumCost.toFixed(2)}</span>
+                          <span className="font-mono">{step.lowerBound.toFixed(2)}</span>
                           <Plus className="w-3 h-3" />
                           <span className="font-mono">{step.share.toFixed(2)}</span>
                           <Equal className="w-3 h-3" />
@@ -340,11 +335,7 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-accent" />
                       <span className="font-medium">Nucleolus</span>
-                      <Badge variant="secondary" className="text-xs">Iterative optimization</Badge>
-                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[9px] font-medium bg-destructive/10 text-destructive border border-destructive/20">
-                        <AlertTriangle className="w-2.5 h-2.5" />
-                        Approx
-                      </span>
+                      <Badge variant="secondary" className="text-xs">Exact sequential LP</Badge>
                     </div>
                     {openMethod === 'nucleolus' ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </div>
@@ -373,11 +364,10 @@ const ShowStepsPanel = ({ participants, coalitions, calculations }: ShowStepsPan
                     <div className="space-y-2">
                       <p className="text-sm font-medium">The Algorithm:</p>
                       <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                        <li>Start with equal split: {calculations.grandCoalitionCost.toFixed(2)} ÷ {n} = {(calculations.grandCoalitionCost / n).toFixed(2)} each</li>
-                        <li>Calculate excess for each coalition</li>
-                        <li>Find the most unhappy coalition (most negative excess)</li>
-                        <li>Adjust allocations to reduce their unhappiness</li>
-                        <li>Repeat until no coalition can be made happier without making another angrier</li>
+                        <li>Solve a linear program that maximizes the minimum excess ε over all coalitions</li>
+                        <li>Coalitions whose excess cannot rise above ε are fixed at that value</li>
+                        <li>Repeat with the remaining coalitions (at most n−1 LPs, per the paper)</li>
+                        <li>The result is exact and unique — and always in the Core when the Core is non-empty</li>
                       </ol>
                     </div>
 

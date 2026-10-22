@@ -153,7 +153,7 @@ const CoreStoryMode = ({
         <span>
           Notice: The <GlossaryTermLink term="Shapley Value">Shapley Value</GlossaryTermLink> is sometimes OUTSIDE the Core! 
           It prioritizes <GlossaryTermLink term="Marginal Contribution">marginal contribution</GlossaryTermLink> fairness, not stability. 
-          The <GlossaryTermLink term="Nucleolus">Nucleolus</GlossaryTermLink> and <GlossaryTermLink term="SCRB Method">SCRB</GlossaryTermLink> are designed to always be inside (when the Core exists).
+          The <GlossaryTermLink term="Nucleolus">Nucleolus</GlossaryTermLink> and <GlossaryTermLink term="MCRS Method">MCRS</GlossaryTermLink> are always inside (when the Core exists) — but <GlossaryTermLink term="SCRB Method">SCRB</GlossaryTermLink> may fall outside, which is exactly why the paper proposes MCRS.
         </span>
       ),
       color: "bg-accent",

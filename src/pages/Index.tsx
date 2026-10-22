@@ -35,11 +35,12 @@ const Index = () => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 150;
       
-      const sections = Object.entries(sectionRefs);
+      // Page order (not object key order): hero, theory, calculator, paper, document
+      const sections = ["hero", "theory", "calculator", "paper", "document"] as const;
       for (let i = sections.length - 1; i >= 0; i--) {
-        const [key, ref] = sections[i];
+        const ref = sectionRefs[sections[i]];
         if (ref.current && ref.current.offsetTop <= scrollPosition) {
-          setActiveTab(key);
+          setActiveTab(sections[i]);
           break;
         }
       }

@@ -77,7 +77,7 @@ const CompareChart = ({
     // Determine which method favors each participant (lower cost = favorable)
     const participantFavorability = participants.map((p, i) => {
       const diff = differences[i];
-      if (Math.abs(diff) < 0.01) return { participant: p.name, favoredMethod: 'equal' as const, savings: 0 };
+      if (Math.abs(diff) < 0.01) return { participant: p.name, favoredMethod: 'tie' as const, savings: 0 };
       // Positive diff means method1 is higher, so method2 is favorable
       // Negative diff means method1 is lower, so method1 is favorable
       return {
@@ -89,7 +89,7 @@ const CompareChart = ({
 
     const method1FavorCount = participantFavorability.filter(f => f.favoredMethod === compareMethod1).length;
     const method2FavorCount = participantFavorability.filter(f => f.favoredMethod === compareMethod2).length;
-    const equalCount = participantFavorability.filter(f => f.favoredMethod === 'equal').length;
+    const equalCount = participantFavorability.filter(f => f.favoredMethod === 'tie').length;
 
     return {
       totalVariance,
@@ -113,6 +113,7 @@ const CompareChart = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="scrb">SCRB</SelectItem>
+              <SelectItem value="mcrs">MCRS</SelectItem>
               <SelectItem value="shapley">Shapley</SelectItem>
               <SelectItem value="nucleolus">Nucleolus</SelectItem>
               <SelectItem value="equal">Equal Split</SelectItem>
@@ -128,6 +129,7 @@ const CompareChart = ({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="scrb">SCRB</SelectItem>
+              <SelectItem value="mcrs">MCRS</SelectItem>
               <SelectItem value="shapley">Shapley</SelectItem>
               <SelectItem value="nucleolus">Nucleolus</SelectItem>
               <SelectItem value="equal">Equal Split</SelectItem>
@@ -274,7 +276,7 @@ const CompareChart = ({
         {/* Key Metrics */}
         <div className="grid grid-cols-3 divide-x divide-border">
           <div className="p-4 text-center">
-            <div className="text-xs text-muted-foreground mb-1">Total Variance</div>
+            <div className="text-xs text-muted-foreground mb-1">Total Abs. Difference</div>
             <div className="text-xl font-bold font-mono text-primary">
               {summaryStats.totalVariance.toFixed(2)}
             </div>
@@ -339,7 +341,7 @@ const CompareChart = ({
               >
                 <span className="w-28 truncate font-medium">{pf.participant}</span>
                 <TrendingUp className="w-3 h-3 text-muted-foreground" />
-                {pf.favoredMethod === 'equal' ? (
+                {pf.favoredMethod === 'tie' ? (
                   <span className="text-muted-foreground italic">No significant difference</span>
                 ) : (
                   <>
