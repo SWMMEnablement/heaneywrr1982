@@ -14,7 +14,25 @@ export const permutations = <T,>(arr: T[]): T[][] => {
   return result;
 };
 
-/** Get coalition cost by participant IDs */
+/** Find a coalition entry by participant IDs (order-independent) */
+export const findCoalition = (
+  ids: number[],
+  coalitions: CoalitionCost[]
+): CoalitionCost | undefined => {
+  const sorted = [...ids].sort((a, b) => a - b);
+  return coalitions.find(c =>
+    c.participants.length === sorted.length &&
+    sorted.every(id => c.participants.includes(id))
+  );
+};
+
+/**
+ * Get coalition cost by participant IDs.
+ * A coalition missing from the table falls back to the sum of its members'
+ * standalone costs (the "no cooperation" default) — never zero, which would
+ * poison Shapley, SCRB and the core. The paper notes "it is not required
+ * that all coalition values be available".
+ */
 export const getCoalitionCost = (
   ids: number[],
   participants: Participant[],
@@ -23,12 +41,13 @@ export const getCoalitionCost = (
   if (ids.length === 1) {
     return participants.find(p => p.id === ids[0])?.independentCost ?? 0;
   }
-  const sorted = [...ids].sort((a, b) => a - b);
-  const coalition = coalitions.find(c =>
-    c.participants.length === sorted.length &&
-    sorted.every(id => c.participants.includes(id))
+  const coalition = findCoalition(ids, coalitions);
+  if (coalition) return coalition.cost;
+  // No-cooperation fallback: members act independently
+  return ids.reduce(
+    (sum, id) => sum + (participants.find(p => p.id === id)?.independentCost ?? 0),
+    0
   );
-  return coalition?.cost ?? 0;
 };
 
 /** Calculate marginal contribution for a player joining after orderBefore */
