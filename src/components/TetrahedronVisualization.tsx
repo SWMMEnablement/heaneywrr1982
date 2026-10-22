@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState, Suspense } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text, Html } from "@react-three/drei";
+import { OrbitControls, Html } from "@react-three/drei";
 import * as THREE from "three";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +11,7 @@ interface TetrahedronVisualizationProps {
   participants: { id: number; name: string; independentCost: number }[];
   allocations: {
     scrb: number[];
+    mcrs: number[];
     shapley: number[];
     nucleolus: number[];
     equal: number[];
@@ -53,20 +54,22 @@ const TetrahedronWireframe = () => {
     [1, 2], [1, 3], [2, 3],
   ];
 
-  const lineGeometries = useMemo(() => {
+  const lines = useMemo(() => {
     return edges.map(([start, end]) => {
       const points = [
         new THREE.Vector3(...vertices[start]),
         new THREE.Vector3(...vertices[end]),
       ];
-      return new THREE.BufferGeometry().setFromPoints(points);
+      const geometry = new THREE.BufferGeometry().setFromPoints(points);
+      const material = new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.4 });
+      return new THREE.Line(geometry, material);
     });
   }, []);
 
   return (
     <group>
-      {lineGeometries.map((geometry, i) => (
-        <primitive key={i} object={new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: 0x666666, transparent: true, opacity: 0.4 }))} />
+      {lines.map((line, i) => (
+        <primitive key={i} object={line} />
       ))}
       {/* Faces with transparency */}
       <mesh>
@@ -126,18 +129,14 @@ const AllocationPoint = ({
   );
 };
 
-// Vertex labels
+// Vertex labels — Html, so no runtime font download can suspend the scene
 const VertexLabel = ({ position, label }: { position: [number, number, number]; label: string }) => {
   return (
-    <Text
-      position={[position[0] * 1.2, position[1] * 1.2, position[2] * 1.2]}
-      fontSize={0.15}
-      color="#888"
-      anchorX="center"
-      anchorY="middle"
-    >
-      {label}
-    </Text>
+    <Html position={[position[0] * 1.25, position[1] * 1.25, position[2] * 1.25]} center>
+      <span className="text-xs font-serif text-muted-foreground whitespace-nowrap pointer-events-none select-none">
+        {label}
+      </span>
+    </Html>
   );
 };
 
@@ -172,24 +171,31 @@ const Scene = ({
     if (grandCoalitionCost === 0) return [];
     
     return [
-      { 
-        key: 'scrb', 
-        label: 'SCRB', 
-        color: '#4f46e5', 
+      {
+        key: 'scrb',
+        label: 'SCRB',
+        color: '#4f46e5',
         values: allocations.scrb,
         position: barycentricToCartesian(allocations.scrb),
       },
-      { 
-        key: 'shapley', 
-        label: 'Shapley', 
-        color: '#0891b2', 
+      {
+        key: 'mcrs',
+        label: 'MCRS',
+        color: '#1e7a4f',
+        values: allocations.mcrs,
+        position: barycentricToCartesian(allocations.mcrs),
+      },
+      {
+        key: 'shapley',
+        label: 'Shapley',
+        color: '#0891b2',
         values: allocations.shapley,
         position: barycentricToCartesian(allocations.shapley),
       },
-      { 
-        key: 'nucleolus', 
-        label: 'Nucleolus', 
-        color: '#059669', 
+      {
+        key: 'nucleolus',
+        label: 'Nucleolus',
+        color: '#b8860b',
         values: allocations.nucleolus,
         position: barycentricToCartesian(allocations.nucleolus),
       },
@@ -327,6 +333,7 @@ const TetrahedronVisualization = ({
         <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm">
           {[
             { label: 'SCRB', color: 'bg-primary' },
+            { label: 'MCRS', color: 'bg-mcrs' },
             { label: 'Shapley', color: 'bg-interactive' },
             { label: 'Nucleolus', color: 'bg-accent' },
             { label: 'Equal', color: 'bg-muted-foreground/50' },

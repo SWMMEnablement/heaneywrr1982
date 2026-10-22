@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Triangle, Target, Info, Eye, EyeOff, Move, MousePointer, Play, RotateCcw } from "lucide-react";
 import CoreStoryMode from "./CoreStoryMode";
 import ContextualQuizPrompt from "./ContextualQuizPrompt";
+import { computeCorePolygon } from "@/lib/core-geometry";
+import { getCoalitionCost } from "@/lib/steps-helpers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 
 interface HoveredPoint {
-  type: 'scrb' | 'shapley' | 'centroid' | 'nucleolus' | 'custom';
+  type: 'scrb' | 'mcrs' | 'shapley' | 'centroid' | 'nucleolus' | 'custom';
   x: number;
   y: number;
   values?: number[];
@@ -25,45 +27,50 @@ interface CoreVisualizationProps {
   participants: { id: number; name: string; independentCost: number }[];
   coalitions: { participants: number[]; cost: number }[];
   scrbAllocations: number[];
+  mcrsAllocations: number[];
   shapleyValues: number[];
+  nucleolusValues: number[];
   grandCoalitionCost: number;
 }
+
+// SVG geometry — module constants so memoized callbacks stay stable
+const WIDTH = 400;
+const HEIGHT = 360;
+const PADDING = 40;
+const TRIANGLE_HEIGHT = HEIGHT - PADDING * 2;
+const TRIANGLE_WIDTH = TRIANGLE_HEIGHT * (2 / Math.sqrt(3));
+const CENTER_X = WIDTH / 2;
+const VERTICES = {
+  A: { x: CENTER_X, y: PADDING }, // Top (Player 1)
+  B: { x: CENTER_X - TRIANGLE_WIDTH / 2, y: PADDING + TRIANGLE_HEIGHT }, // Bottom left (Player 2)
+  C: { x: CENTER_X + TRIANGLE_WIDTH / 2, y: PADDING + TRIANGLE_HEIGHT }, // Bottom right (Player 3)
+};
+
+type DraggablePoint = 'scrb' | 'mcrs' | 'shapley' | 'nucleolus';
 
 const CoreVisualization = ({
   participants,
   coalitions,
   scrbAllocations,
+  mcrsAllocations,
   shapleyValues,
+  nucleolusValues,
   grandCoalitionCost,
 }: CoreVisualizationProps) => {
   const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
   const [clickedConstraint, setClickedConstraint] = useState<ClickedConstraint | null>(null);
-  const [draggingPoint, setDraggingPoint] = useState<'scrb' | 'shapley' | 'nucleolus' | null>(null);
-  const [dragOffsets, setDragOffsets] = useState<{
-    scrb: { x: number; y: number };
-    shapley: { x: number; y: number };
-    nucleolus: { x: number; y: number };
-  }>({
+  const [draggingPoint, setDraggingPoint] = useState<DraggablePoint | null>(null);
+  const [dragOffsets, setDragOffsets] = useState<Record<DraggablePoint, { x: number; y: number }>>({
     scrb: { x: 0, y: 0 },
+    mcrs: { x: 0, y: 0 },
     shapley: { x: 0, y: 0 },
     nucleolus: { x: 0, y: 0 },
   });
-  
-  // SVG dimensions
-  const width = 400;
-  const height = 360;
-  const padding = 40;
-  
-  // Triangle vertices (equilateral triangle)
-  const triangleHeight = height - padding * 2;
-  const triangleWidth = triangleHeight * (2 / Math.sqrt(3));
-  const centerX = width / 2;
-  
-  const vertices = {
-    A: { x: centerX, y: padding }, // Top (Player 1)
-    B: { x: centerX - triangleWidth / 2, y: padding + triangleHeight }, // Bottom left (Player 2)
-    C: { x: centerX + triangleWidth / 2, y: padding + triangleHeight }, // Bottom right (Player 3)
-  };
+
+  const vertices = VERTICES;
+  const width = WIDTH;
+  const height = HEIGHT;
+  const centerX = CENTER_X;
 
   // Convert barycentric coordinates to Cartesian
   const barycentricToCartesian = useCallback((coords: number[]) => {
@@ -85,140 +92,41 @@ const CoreVisualization = ({
   }, [vertices]);
 
   // Normalize allocations to barycentric coordinates
-  const allocationToBarycentric = useCallback((allocation: number[]) => {
+  const allocationToBarycentric = useCallback((allocation: number[] | undefined) => {
+    if (!allocation || allocation.length === 0) return [1/3, 1/3, 1/3];
     const total = allocation.reduce((sum, v) => sum + v, 0);
     if (total === 0) return [1/3, 1/3, 1/3];
     return allocation.map(v => v / total);
   }, []);
 
-  // Calculate core constraints
+  // Exact core polygon via half-plane clipping (no grid sampling — thin or
+  // degenerate cores are reported correctly, and lookups are id-aware)
+  const corePolygon = useMemo(
+    () => computeCorePolygon(participants, coalitions, grandCoalitionCost),
+    [participants, coalitions, grandCoalitionCost]
+  );
+
   const coreConstraints = useMemo(() => {
-    const n = participants.length;
-    if (n !== 3) return { vertices: [], isFeasible: false };
-
-    const c1 = participants[0].independentCost;
-    const c2 = participants[1].independentCost;
-    const c3 = participants[2].independentCost;
-    
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
-
-    const C = grandCoalitionCost;
-
-    // Core constraints for a 3-player cost game
-    const constraints = [
-      { type: 'individual', player: 1, bound: c1 },
-      { type: 'individual', player: 2, bound: c2 },
-      { type: 'individual', player: 3, bound: c3 },
-      { type: 'coalition', players: [1, 2], bound: c12 },
-      { type: 'coalition', players: [1, 3], bound: c13 },
-      { type: 'coalition', players: [2, 3], bound: c23 },
-    ];
-
-    // Generate core polygon vertices using constraint intersection
-    const coreVertices: number[][] = [];
-    const step = 0.02;
-    
-    for (let x1 = 0; x1 <= C; x1 += step * C) {
-      for (let x2 = 0; x2 <= C - x1; x2 += step * C) {
-        const x3 = C - x1 - x2;
-        if (x3 < 0) continue;
-        
-        // Check all constraints
-        if (x1 > c1 + 0.001) continue;
-        if (x2 > c2 + 0.001) continue;
-        if (x3 > c3 + 0.001) continue;
-        if (x1 + x2 > c12 + 0.001) continue;
-        if (x1 + x3 > c13 + 0.001) continue;
-        if (x2 + x3 > c23 + 0.001) continue;
-        
-        coreVertices.push([x1, x2, x3]);
-      }
-    }
-
-    // Compute convex hull of feasible points for polygon
-    const points = coreVertices.map(v => {
-      const bary = allocationToBarycentric(v);
-      return barycentricToCartesian(bary);
-    });
-
-    // Simple convex hull using gift wrapping
-    const computeConvexHull = (pts: { x: number; y: number }[]) => {
-      if (pts.length < 3) return pts;
-      
-      const sorted = [...pts].sort((a, b) => a.x - b.x || a.y - b.y);
-      const cross = (o: { x: number; y: number }, a: { x: number; y: number }, b: { x: number; y: number }) =>
-        (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
-      
-      const lower: { x: number; y: number }[] = [];
-      for (const p of sorted) {
-        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) {
-          lower.pop();
-        }
-        lower.push(p);
-      }
-      
-      const upper: { x: number; y: number }[] = [];
-      for (let i = sorted.length - 1; i >= 0; i--) {
-        const p = sorted[i];
-        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) {
-          upper.pop();
-        }
-        upper.push(p);
-      }
-      
-      lower.pop();
-      upper.pop();
-      return [...lower, ...upper];
-    };
-
-    const hull = computeConvexHull(points);
-    
+    const points = corePolygon.vertices.map(v =>
+      barycentricToCartesian(allocationToBarycentric(v))
+    );
     return {
-      vertices: hull,
-      isFeasible: hull.length >= 3,
-      constraints,
+      vertices: points,
+      status: corePolygon.status,
+      isFeasible: corePolygon.status !== "empty",
     };
-  }, [participants, coalitions, grandCoalitionCost, allocationToBarycentric, barycentricToCartesian]);
+  }, [corePolygon, allocationToBarycentric, barycentricToCartesian]);
 
-  // Check if a point is in the core
+  // Check if a point is in the core (id-aware lookups)
   const isPointInCore = useCallback((x: number, y: number, C: number) => {
-    const c1 = participants[0]?.independentCost ?? 0;
-    const c2 = participants[1]?.independentCost ?? 0;
-    const c3 = participants[2]?.independentCost ?? 0;
-    
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
+    if (participants.length !== 3) return false;
+    const [p1, p2, p3] = participants;
+    const c1 = p1.independentCost;
+    const c2 = p2.independentCost;
+    const c3 = p3.independentCost;
+    const c12 = getCoalitionCost([p1.id, p2.id], participants, coalitions);
+    const c13 = getCoalitionCost([p1.id, p3.id], participants, coalitions);
+    const c23 = getCoalitionCost([p2.id, p3.id], participants, coalitions);
 
     const bary = cartesianToBarycentric(x, y);
     const x1 = bary[0] * C;
@@ -246,92 +154,16 @@ const CoreVisualization = ({
     return barycentricToCartesian(bary);
   }, [shapleyValues, allocationToBarycentric, barycentricToCartesian]);
 
+  // MCRS allocation point
+  const mcrsPoint = useMemo(() => {
+    const bary = allocationToBarycentric(mcrsAllocations);
+    return barycentricToCartesian(bary);
+  }, [mcrsAllocations, allocationToBarycentric, barycentricToCartesian]);
+
   // Equal split point (centroid)
   const centroid = barycentricToCartesian([1/3, 1/3, 1/3]);
 
-  // Calculate Nucleolus
-  const nucleolusValues = useMemo(() => {
-    const n = participants.length;
-    if (n !== 3) return [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
-
-    const c1 = participants[0].independentCost;
-    const c2 = participants[1].independentCost;
-    const c3 = participants[2].independentCost;
-    const C = grandCoalitionCost;
-
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
-
-    let x1 = C / 3;
-    let x2 = C / 3;
-    let x3 = C / 3;
-
-    const iterations = 100;
-    const step = 0.01;
-
-    for (let iter = 0; iter < iterations; iter++) {
-      const excesses = [
-        { type: 'x1', value: c1 - x1 },
-        { type: 'x2', value: c2 - x2 },
-        { type: 'x3', value: c3 - x3 },
-        { type: 'x12', value: c12 - x1 - x2 },
-        { type: 'x13', value: c13 - x1 - x3 },
-        { type: 'x23', value: c23 - x2 - x3 },
-      ];
-
-      const minExcess = Math.min(...excesses.map(e => e.value));
-      const tightConstraints = excesses.filter(e => Math.abs(e.value - minExcess) < step * 2);
-
-      let dx1 = 0, dx2 = 0, dx3 = 0;
-      
-      for (const tc of tightConstraints) {
-        switch (tc.type) {
-          case 'x1': dx1 -= step; break;
-          case 'x2': dx2 -= step; break;
-          case 'x3': dx3 -= step; break;
-          case 'x12': dx1 -= step / 2; dx2 -= step / 2; break;
-          case 'x13': dx1 -= step / 2; dx3 -= step / 2; break;
-          case 'x23': dx2 -= step / 2; dx3 -= step / 2; break;
-        }
-      }
-
-      const total = dx1 + dx2 + dx3;
-      dx1 -= total / 3;
-      dx2 -= total / 3;
-      dx3 -= total / 3;
-
-      x1 += dx1;
-      x2 += dx2;
-      x3 += dx3;
-
-      const sum = x1 + x2 + x3;
-      x1 = x1 * C / sum;
-      x2 = x2 * C / sum;
-      x3 = x3 * C / sum;
-
-      x1 = Math.max(0, x1);
-      x2 = Math.max(0, x2);
-      x3 = Math.max(0, x3);
-    }
-
-    return [x1, x2, x3];
-  }, [participants, coalitions, grandCoalitionCost]);
-
+  // Nucleolus comes from the shared calculation engine (exact sequential LP)
   const nucleolusPoint = useMemo(() => {
     const bary = allocationToBarycentric(nucleolusValues);
     return barycentricToCartesian(bary);
@@ -399,34 +231,24 @@ const CoreVisualization = ({
   // Calculate constraint boundary lines
   const constraintLines = useMemo(() => {
     const C = grandCoalitionCost;
-    if (C === 0) return [];
+    if (C === 0 || participants.length !== 3) return [];
 
-    const c1 = participants[0]?.independentCost ?? 0;
-    const c2 = participants[1]?.independentCost ?? 0;
-    const c3 = participants[2]?.independentCost ?? 0;
-    
-    const c12 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(2)
-    )?.cost ?? c1 + c2;
-    
-    const c13 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(1) && 
-      c.participants.includes(3)
-    )?.cost ?? c1 + c3;
-    
-    const c23 = coalitions.find(c => 
-      c.participants.length === 2 && 
-      c.participants.includes(2) && 
-      c.participants.includes(3)
-    )?.cost ?? c2 + c3;
+    const [pp1, pp2, pp3] = participants;
+    const c1 = pp1.independentCost;
+    const c2 = pp2.independentCost;
+    const c3 = pp3.independentCost;
 
-    const lines: { 
-      x1: number; y1: number; x2: number; y2: number; 
-      label: string; 
+    // Id-aware coalition lookups (no hard-coded 1/2/3)
+    const c12 = getCoalitionCost([pp1.id, pp2.id], participants, coalitions);
+    const c13 = getCoalitionCost([pp1.id, pp3.id], participants, coalitions);
+    const c23 = getCoalitionCost([pp2.id, pp3.id], participants, coalitions);
+
+    const lines: {
+      x1: number; y1: number; x2: number; y2: number;
+      label: string;
       constraintKey: string;
+      /** Exact key story mode produces for this constraint: `x` + joined ids */
+      storyKey: string;
       type: 'individual' | 'coalition';
       color: string;
     }[] = [];
@@ -438,7 +260,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([x1, C - x1, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁ ≤ ${c1}`, constraintKey: 'x₁', type: 'individual', color: 'hsl(var(--chart-1))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁ ≤ ${c1}`, constraintKey: 'x₁', storyKey: `x${pp1.id}`, type: 'individual', color: 'hsl(var(--chart-1))' });
     }
 
     // Individual constraint x2 = c2
@@ -448,7 +270,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x2, x2, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂ ≤ ${c2}`, constraintKey: 'x₂', type: 'individual', color: 'hsl(var(--chart-2))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂ ≤ ${c2}`, constraintKey: 'x₂', storyKey: `x${pp2.id}`, type: 'individual', color: 'hsl(var(--chart-2))' });
     }
 
     // Individual constraint x3 = c3
@@ -458,7 +280,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x3, 0, x3]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₃ ≤ ${c3}`, constraintKey: 'x₃', type: 'individual', color: 'hsl(var(--chart-3))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₃ ≤ ${c3}`, constraintKey: 'x₃', storyKey: `x${pp3.id}`, type: 'individual', color: 'hsl(var(--chart-3))' });
     }
 
     // Coalition constraint x1 + x2 = c12
@@ -468,7 +290,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x3, 0, x3]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₂ ≤ ${c12}`, constraintKey: 'x₁+x₂', type: 'coalition', color: 'hsl(var(--chart-4))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₂ ≤ ${c12}`, constraintKey: 'x₁+x₂', storyKey: `x${pp1.id}${pp2.id}`, type: 'coalition', color: 'hsl(var(--chart-4))' });
     }
 
     // Coalition constraint x1 + x3 = c13
@@ -478,7 +300,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([C - x2, x2, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₃ ≤ ${c13}`, constraintKey: 'x₁+x₃', type: 'coalition', color: 'hsl(var(--chart-5))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₁+x₃ ≤ ${c13}`, constraintKey: 'x₁+x₃', storyKey: `x${pp1.id}${pp3.id}`, type: 'coalition', color: 'hsl(var(--chart-5))' });
     }
 
     // Coalition constraint x2 + x3 = c23
@@ -488,7 +310,7 @@ const CoreVisualization = ({
       const p2 = allocationToBarycentric([x1, C - x1, 0]);
       const pt1 = barycentricToCartesian(p1);
       const pt2 = barycentricToCartesian(p2);
-      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂+x₃ ≤ ${c23}`, constraintKey: 'x₂+x₃', type: 'coalition', color: 'hsl(var(--accent))' });
+      lines.push({ ...pt1, x2: pt2.x, y2: pt2.y, x1: pt1.x, y1: pt1.y, label: `x₂+x₃ ≤ ${c23}`, constraintKey: 'x₂+x₃', storyKey: `x${pp2.id}${pp3.id}`, type: 'coalition', color: 'hsl(var(--accent))' });
     }
 
     return lines;
@@ -512,19 +334,11 @@ const CoreVisualization = ({
     setStoryModeConstraints([]);
   }, []);
 
-  // Check if a constraint is highlighted in story mode
-  const isConstraintHighlighted = useCallback((constraintKey: string) => {
+  // Check if a constraint is highlighted in story mode — exact, id-aware match
+  // (asking for x1 must not also light up x12 and x13)
+  const isConstraintHighlighted = useCallback((line: { storyKey: string }) => {
     if (!isStoryModeActive || storyModeConstraints.length === 0) return true;
-    // Map constraint keys: x₁ -> x1, x₁+x₂ -> x12, etc.
-    const normalizedKey = constraintKey
-      .replace(/₁/g, '1')
-      .replace(/₂/g, '2')
-      .replace(/₃/g, '3')
-      .replace(/\+/g, '');
-    return storyModeConstraints.some(sc => {
-      const normalizedSc = sc.replace(/x/g, '');
-      return normalizedKey.includes(normalizedSc) || normalizedSc === normalizedKey.replace(/x/g, '');
-    });
+    return storyModeConstraints.includes(line.storyKey);
   }, [isStoryModeActive, storyModeConstraints]);
 
   // Handle constraint click
@@ -551,20 +365,21 @@ const CoreVisualization = ({
     const clampedX = Math.max(vertices.B.x, Math.min(vertices.C.x, x));
     const clampedY = Math.max(vertices.A.y, Math.min(vertices.B.y, y));
     
-    const basePoint = draggingPoint === 'scrb' ? scrbPoint : 
+    const basePoint = draggingPoint === 'scrb' ? scrbPoint :
+                      draggingPoint === 'mcrs' ? mcrsPoint :
                       draggingPoint === 'shapley' ? shapleyPoint : nucleolusPoint;
-    
+
     setDragOffsets(prev => ({
       ...prev,
       [draggingPoint]: { x: clampedX - basePoint.x, y: clampedY - basePoint.y }
     }));
-    
+
     // Calculate and show allocation values for dragged position
     const bary = cartesianToBarycentric(clampedX, clampedY);
     const C = grandCoalitionCost;
     const values = [bary[0] * C, bary[1] * C, bary[2] * C];
     setHoveredPoint({ type: 'custom', x: clampedX, y: clampedY, values });
-  }, [draggingPoint, scrbPoint, shapleyPoint, nucleolusPoint, vertices, cartesianToBarycentric, grandCoalitionCost]);
+  }, [draggingPoint, scrbPoint, mcrsPoint, shapleyPoint, nucleolusPoint, cartesianToBarycentric, grandCoalitionCost]);
 
   const handleMouseUp = useCallback(() => {
     setDraggingPoint(null);
@@ -572,8 +387,9 @@ const CoreVisualization = ({
   }, []);
 
   // Get dragged point position
-  const getDraggedPosition = (type: 'scrb' | 'shapley' | 'nucleolus') => {
-    const basePoint = type === 'scrb' ? scrbPoint : 
+  const getDraggedPosition = (type: DraggablePoint) => {
+    const basePoint = type === 'scrb' ? scrbPoint :
+                      type === 'mcrs' ? mcrsPoint :
                       type === 'shapley' ? shapleyPoint : nucleolusPoint;
     const offset = dragOffsets[type];
     return {
@@ -583,7 +399,7 @@ const CoreVisualization = ({
   };
 
   // Check if dragged point is in core
-  const isDraggedPointInCore = (type: 'scrb' | 'shapley' | 'nucleolus') => {
+  const isDraggedPointInCore = (type: DraggablePoint) => {
     const pos = getDraggedPosition(type);
     return isPointInCore(pos.x, pos.y, grandCoalitionCost);
   };
@@ -592,6 +408,7 @@ const CoreVisualization = ({
   const resetDrag = () => {
     setDragOffsets({
       scrb: { x: 0, y: 0 },
+      mcrs: { x: 0, y: 0 },
       shapley: { x: 0, y: 0 },
       nucleolus: { x: 0, y: 0 },
     });
@@ -742,7 +559,7 @@ const CoreVisualization = ({
 
             {/* Constraint boundary lines - clickable */}
             {showConstraints && constraintLines.map((line, i) => {
-              const isHighlighted = isConstraintHighlighted(line.constraintKey);
+              const isHighlighted = isConstraintHighlighted(line);
               const isHovered = highlightedConstraint === line.constraintKey;
               const isStoryHighlight = isStoryModeActive && isHighlighted;
               
@@ -810,8 +627,8 @@ const CoreVisualization = ({
               );
             })}
 
-            {/* Core region */}
-            {coreConstraints.isFeasible && (
+            {/* Core region — area polygon, or a marker for a degenerate (point/line) core */}
+            {coreConstraints.status === 'exists' && (
               <motion.path
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -823,6 +640,36 @@ const CoreVisualization = ({
                 strokeLinejoin="round"
                 filter="url(#glow)"
               />
+            )}
+            {coreConstraints.status === 'degenerate' && coreConstraints.vertices.length > 0 && (
+              <motion.g
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+              >
+                {coreConstraints.vertices.length === 1 ? (
+                  <circle
+                    cx={coreConstraints.vertices[0].x}
+                    cy={coreConstraints.vertices[0].y}
+                    r={6}
+                    fill="url(#coreGradient)"
+                    stroke="hsl(var(--interactive))"
+                    strokeWidth="2"
+                    filter="url(#glow)"
+                  />
+                ) : (
+                  <line
+                    x1={coreConstraints.vertices[0].x}
+                    y1={coreConstraints.vertices[0].y}
+                    x2={coreConstraints.vertices[coreConstraints.vertices.length - 1].x}
+                    y2={coreConstraints.vertices[coreConstraints.vertices.length - 1].y}
+                    stroke="hsl(var(--interactive))"
+                    strokeWidth="4"
+                    strokeLinecap="round"
+                    filter="url(#glow)"
+                  />
+                )}
+              </motion.g>
             )}
 
             {/* Vertex labels */}
@@ -894,6 +741,46 @@ const CoreVisualization = ({
                 width={10} 
                 height={10} 
                 className="pointer-events-none" 
+                style={{ color: 'white', opacity: 0.8 }}
+              />
+            </motion.g>
+
+            {/* MCRS allocation point - Draggable */}
+            <motion.g
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.75, type: "spring" }}
+              style={{ cursor: draggingPoint === 'mcrs' ? 'grabbing' : 'grab' }}
+              onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('mcrs'); }}
+              onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'mcrs', x: getDraggedPosition('mcrs').x, y: getDraggedPosition('mcrs').y })}
+              onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
+            >
+              <circle
+                cx={getDraggedPosition('mcrs').x}
+                cy={getDraggedPosition('mcrs').y}
+                r={hoveredPoint?.type === 'mcrs' || draggingPoint === 'mcrs' ? 12 : 8}
+                fill={isDraggedPointInCore('mcrs') ? "hsl(var(--mcrs))" : "hsl(var(--destructive))"}
+                stroke="white"
+                strokeWidth="2"
+                filter={draggingPoint === 'mcrs' ? "url(#strongGlow)" : "url(#glow)"}
+                className="transition-all duration-200"
+              />
+              {dragOffsets.mcrs.x === 0 && dragOffsets.mcrs.y === 0 && (
+                <text
+                  x={getDraggedPosition('mcrs').x - 16}
+                  y={getDraggedPosition('mcrs').y + 4}
+                  textAnchor="end"
+                  className="text-xs font-medium fill-mcrs pointer-events-none"
+                >
+                  MCRS
+                </text>
+              )}
+              <Move
+                x={getDraggedPosition('mcrs').x - 5}
+                y={getDraggedPosition('mcrs').y - 5}
+                width={10}
+                height={10}
+                className="pointer-events-none"
                 style={{ color: 'white', opacity: 0.8 }}
               />
             </motion.g>
@@ -1003,9 +890,10 @@ const CoreVisualization = ({
                   textAnchor="middle"
                   className="text-xs font-semibold fill-foreground"
                 >
-                  {hoveredPoint.type === 'scrb' ? 'SCRB Allocation' : 
+                  {hoveredPoint.type === 'scrb' ? 'SCRB Allocation' :
+                   hoveredPoint.type === 'mcrs' ? 'MCRS Allocation' :
                    hoveredPoint.type === 'shapley' ? 'Shapley Value' :
-                   hoveredPoint.type === 'nucleolus' ? 'Nucleolus' : 
+                   hoveredPoint.type === 'nucleolus' ? 'Nucleolus' :
                    hoveredPoint.type === 'custom' ? 'Custom Position' : 'Equal Split'}
                 </text>
                 <line
@@ -1017,8 +905,9 @@ const CoreVisualization = ({
                   strokeWidth="1"
                 />
                 {participants.map((p, i) => {
-                  const values = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
+                   const values = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
                                  hoveredPoint.type === 'scrb' ? scrbAllocations :
+                                 hoveredPoint.type === 'mcrs' ? mcrsAllocations :
                                  hoveredPoint.type === 'shapley' ? shapleyValues :
                                  hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                                  [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
@@ -1040,6 +929,7 @@ const CoreVisualization = ({
                 >
                   Total: {(hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
                           hoveredPoint.type === 'scrb' ? scrbAllocations :
+                          hoveredPoint.type === 'mcrs' ? mcrsAllocations :
                           hoveredPoint.type === 'shapley' ? shapleyValues :
                           hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                           [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3])
@@ -1131,6 +1021,10 @@ const CoreVisualization = ({
               <span className="text-muted-foreground">SCRB Method</span>
             </div>
             <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-mcrs" />
+              <span className="text-muted-foreground">MCRS Method</span>
+            </div>
+            <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-interactive" />
               <span className="text-muted-foreground">Shapley Value</span>
             </div>
@@ -1171,9 +1065,11 @@ const CoreVisualization = ({
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-interactive" />
             <span className="text-sm font-medium">
-              {coreConstraints.isFeasible 
+              {coreConstraints.status === 'exists'
                 ? "Core exists — stable allocations available"
-                : "Core may be empty — check constraint feasibility"
+                : coreConstraints.status === 'degenerate'
+                ? "Core is a single point or line — exactly one stable allocation"
+                : "Core is empty — no stable allocation exists"
               }
             </span>
           </div>

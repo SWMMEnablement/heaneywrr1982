@@ -32,6 +32,25 @@ const CheatSheet = () => {
       cons: ["May fall outside the Core", "Sensitive to standalone costs"],
     },
     {
+      name: "MCRS Method",
+      fullName: "Minimum Costs, Remaining Savings",
+      icon: <Puzzle className="w-5 h-5" />,
+      color: "bg-mcrs",
+      formula: "xᵢ = xᵢᵐⁱⁿ + βᵢ × NSC",
+      components: [
+        { term: "xᵢᵐⁱⁿ, xᵢᵐᵃˣ", def: "Min/max feasible cost within the Core (LP, eq. 20)" },
+        { term: "βᵢ", def: "(xᵢᵐᵃˣ − xᵢᵐⁱⁿ) / Σ(xⱼᵐᵃˣ − xⱼᵐⁱⁿ) (eq. 21)" },
+        { term: "NSC", def: "c(N) − Σxⱼᵐⁱⁿ (eq. 22)" },
+      ],
+      whenToUse: [
+        "When the allocation must be stable (in the Core)",
+        "Generalizing SCRB with all coalition data",
+        "Water resource & multipurpose projects",
+      ],
+      pros: ["Always in the Core (when non-empty)", "Uses all available coalition data", "The paper's proposed method"],
+      cons: ["Requires solving 2n linear programs", "Needs θ-relaxation when the Core is empty"],
+    },
+    {
       name: "Shapley Value",
       fullName: "Average Marginal Contribution",
       icon: <Award className="w-5 h-5" />,
@@ -214,6 +233,13 @@ const CheatSheet = () => {
                     <td className="border p-1.5">Infrastructure cost attribution</td>
                   </tr>
                   <tr className="bg-muted/30 print:bg-gray-50">
+                    <td className="border p-1.5 font-medium">MCRS</td>
+                    <td className="border p-1.5 text-center">✅ Yes*</td>
+                    <td className="border p-1.5 text-center">✅ Yes</td>
+                    <td className="border p-1.5 text-center">Medium (2n LPs)</td>
+                    <td className="border p-1.5">Stable, core-guaranteed allocations</td>
+                  </tr>
+                  <tr>
                     <td className="border p-1.5 font-medium">Shapley</td>
                     <td className="border p-1.5 text-center">❌ No</td>
                     <td className="border p-1.5 text-center">✅ Yes</td>

@@ -78,8 +78,10 @@ describe("getCoalitionCost", () => {
     expect(getCoalitionCost([3, 2, 1], participants, coalitions)).toBe(7);
   });
 
-  it("returns 0 for unknown coalition", () => {
-    expect(getCoalitionCost([1, 2], participants, [])).toBe(0);
+  it("missing coalition falls back to no-cooperation cost (sum of standalone)", () => {
+    // c({1,2}) unknown → 2 + 4 = 6, never 0 (which would poison Shapley/SCRB/core)
+    expect(getCoalitionCost([1, 2], participants, [])).toBe(6);
+    expect(getCoalitionCost([1, 2, 3], participants, [])).toBe(12);
   });
 
   it("returns 0 for unknown single player", () => {
