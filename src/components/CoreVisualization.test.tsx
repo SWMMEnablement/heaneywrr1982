@@ -59,8 +59,8 @@ function expectFiniteSvgPoints(container: HTMLElement) {
     const cy = circle.getAttribute("cy");
     expect(cx).not.toBeNull();
     expect(cy).not.toBeNull();
-    expect(Number(cx)).toBeFinite();
-    expect(Number(cy)).toBeFinite();
+    expect(Number.isFinite(Number(cx))).toBe(true);
+    expect(Number.isFinite(Number(cy))).toBe(true);
   });
 }
 
