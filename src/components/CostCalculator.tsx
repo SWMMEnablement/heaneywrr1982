@@ -64,24 +64,25 @@ const CostCalculator = () => {
         { participants: [1, 2, 3], cost: 7 },
       ]);
     } else {
+      // Paper's four-person game (Table 1, p. 481) — non-convex, so MCRS ≠ SCRB
       setParticipants([
-        { id: 1, name: "Participant 1", independentCost: 15 },
-        { id: 2, name: "Participant 2", independentCost: 25 },
-        { id: 3, name: "Participant 3", independentCost: 20 },
-        { id: 4, name: "Participant 4", independentCost: 18 },
+        { id: 1, name: "Purpose 1", independentCost: 2 },
+        { id: 2, name: "Purpose 2", independentCost: 4 },
+        { id: 3, name: "Purpose 3", independentCost: 6 },
+        { id: 4, name: "Purpose 4", independentCost: 8 },
       ]);
       setCoalitions([
-        { participants: [1, 2], cost: 32 },
-        { participants: [1, 3], cost: 28 },
-        { participants: [1, 4], cost: 26 },
-        { participants: [2, 3], cost: 36 },
-        { participants: [2, 4], cost: 34 },
-        { participants: [3, 4], cost: 30 },
-        { participants: [1, 2, 3], cost: 42 },
-        { participants: [1, 2, 4], cost: 40 },
-        { participants: [1, 3, 4], cost: 38 },
-        { participants: [2, 3, 4], cost: 45 },
-        { participants: [1, 2, 3, 4], cost: 50 },
+        { participants: [1, 2], cost: 5 },
+        { participants: [1, 3], cost: 6 },
+        { participants: [1, 4], cost: 9 },
+        { participants: [2, 3], cost: 6 },
+        { participants: [2, 4], cost: 10 },
+        { participants: [3, 4], cost: 10 },
+        { participants: [1, 2, 3], cost: 7 },
+        { participants: [1, 2, 4], cost: 12 },
+        { participants: [1, 3, 4], cost: 12 },
+        { participants: [2, 3, 4], cost: 11 },
+        { participants: [1, 2, 3, 4], cost: 12 },
       ]);
     }
   };
