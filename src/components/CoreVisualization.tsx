@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Button } from "@/components/ui/button";
 
 interface HoveredPoint {
-  type: 'scrb' | 'shapley' | 'centroid' | 'nucleolus' | 'custom';
+  type: 'scrb' | 'mcrs' | 'shapley' | 'centroid' | 'nucleolus' | 'custom';
   x: number;
   y: number;
   values?: number[];
@@ -25,45 +25,50 @@ interface CoreVisualizationProps {
   participants: { id: number; name: string; independentCost: number }[];
   coalitions: { participants: number[]; cost: number }[];
   scrbAllocations: number[];
+  mcrsAllocations: number[];
   shapleyValues: number[];
+  nucleolusValues: number[];
   grandCoalitionCost: number;
 }
+
+// SVG geometry — module constants so memoized callbacks stay stable
+const WIDTH = 400;
+const HEIGHT = 360;
+const PADDING = 40;
+const TRIANGLE_HEIGHT = HEIGHT - PADDING * 2;
+const TRIANGLE_WIDTH = TRIANGLE_HEIGHT * (2 / Math.sqrt(3));
+const CENTER_X = WIDTH / 2;
+const VERTICES = {
+  A: { x: CENTER_X, y: PADDING }, // Top (Player 1)
+  B: { x: CENTER_X - TRIANGLE_WIDTH / 2, y: PADDING + TRIANGLE_HEIGHT }, // Bottom left (Player 2)
+  C: { x: CENTER_X + TRIANGLE_WIDTH / 2, y: PADDING + TRIANGLE_HEIGHT }, // Bottom right (Player 3)
+};
+
+type DraggablePoint = 'scrb' | 'mcrs' | 'shapley' | 'nucleolus';
 
 const CoreVisualization = ({
   participants,
   coalitions,
   scrbAllocations,
+  mcrsAllocations,
   shapleyValues,
+  nucleolusValues,
   grandCoalitionCost,
 }: CoreVisualizationProps) => {
   const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
   const [clickedConstraint, setClickedConstraint] = useState<ClickedConstraint | null>(null);
-  const [draggingPoint, setDraggingPoint] = useState<'scrb' | 'shapley' | 'nucleolus' | null>(null);
-  const [dragOffsets, setDragOffsets] = useState<{
-    scrb: { x: number; y: number };
-    shapley: { x: number; y: number };
-    nucleolus: { x: number; y: number };
-  }>({
+  const [draggingPoint, setDraggingPoint] = useState<DraggablePoint | null>(null);
+  const [dragOffsets, setDragOffsets] = useState<Record<DraggablePoint, { x: number; y: number }>>({
     scrb: { x: 0, y: 0 },
+    mcrs: { x: 0, y: 0 },
     shapley: { x: 0, y: 0 },
     nucleolus: { x: 0, y: 0 },
   });
-  
-  // SVG dimensions
-  const width = 400;
-  const height = 360;
-  const padding = 40;
-  
-  // Triangle vertices (equilateral triangle)
-  const triangleHeight = height - padding * 2;
-  const triangleWidth = triangleHeight * (2 / Math.sqrt(3));
-  const centerX = width / 2;
-  
-  const vertices = {
-    A: { x: centerX, y: padding }, // Top (Player 1)
-    B: { x: centerX - triangleWidth / 2, y: padding + triangleHeight }, // Bottom left (Player 2)
-    C: { x: centerX + triangleWidth / 2, y: padding + triangleHeight }, // Bottom right (Player 3)
-  };
+
+  const vertices = VERTICES;
+  const width = WIDTH;
+  const height = HEIGHT;
+  const centerX = CENTER_X;
 
   // Convert barycentric coordinates to Cartesian
   const barycentricToCartesian = useCallback((coords: number[]) => {
