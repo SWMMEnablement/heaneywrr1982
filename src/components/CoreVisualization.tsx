@@ -92,7 +92,8 @@ const CoreVisualization = ({
   }, [vertices]);
 
   // Normalize allocations to barycentric coordinates
-  const allocationToBarycentric = useCallback((allocation: number[]) => {
+  const allocationToBarycentric = useCallback((allocation: number[] | undefined) => {
+    if (!allocation || allocation.length === 0) return [1/3, 1/3, 1/3];
     const total = allocation.reduce((sum, v) => sum + v, 0);
     if (total === 0) return [1/3, 1/3, 1/3];
     return allocation.map(v => v / total);
