@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ReactElement } from "react";
 import CoreVisualization from "./CoreVisualization";
 import CostCalculator from "./CostCalculator";
+import { TooltipProvider } from "@/components/ui/tooltip";
+
+const renderWithProviders = (ui: ReactElement) =>
+  render(<TooltipProvider>{ui}</TooltipProvider>);
+
 
 vi.mock("./TetrahedronVisualization", () => ({
   default: () => <div data-testid="tetrahedron-visualization">4-player visualization</div>,
@@ -71,7 +76,8 @@ describe("CoreVisualization allocation regressions", () => {
         ...baseProps,
         [key]: undefined as unknown as number[],
       };
-      const { container } = render(<CoreVisualization {...props} />);
+      const { container } = renderWithProviders(<CoreVisualization {...props} />);
+
 
       expect(
         screen.getByRole("img", { name: /Triangular core diagram/i })
@@ -92,7 +98,8 @@ describe("CoreVisualization allocation regressions", () => {
       shapleyValues: [],
       nucleolusValues: [],
     };
-    const { container } = render(<CoreVisualization {...props} />);
+    const { container } = renderWithProviders(<CoreVisualization {...props} />);
+
 
     expect(
       screen.getByRole("img", { name: /Triangular core diagram/i })
@@ -106,7 +113,8 @@ describe("CoreVisualization allocation regressions", () => {
 
   it("switches between three-player and four-player visualizations and back", async () => {
     localStorage.setItem("hasSeenFirstTimeExperience", "true");
-    render(<CostCalculator />);
+    renderWithProviders(<CostCalculator />);
+
 
     expect(
       await screen.findByRole("img", { name: /Triangular core diagram/i })
