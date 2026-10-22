@@ -64,10 +64,19 @@ function expectFiniteSvgPoints(container: HTMLElement) {
   });
 }
 
+function getSvgPointLabel(label: string) {
+  const element = screen
+    .getAllByText(label)
+    .find((node) => node.tagName.toLowerCase() === "text");
+  expect(element).toBeDefined();
+  return element!;
+}
+
 describe("CoreVisualization allocation regressions", () => {
   beforeEach(() => {
     localStorage.clear();
   });
+
 
   it.each(allocationKeys)(
     "renders and shows a safe tooltip when %s is undefined",
@@ -84,7 +93,7 @@ describe("CoreVisualization allocation regressions", () => {
       ).toBeInTheDocument();
       expectFiniteSvgPoints(container);
 
-      fireEvent.mouseEnter(screen.getByText(pointLabels[key]));
+      fireEvent.mouseEnter(getSvgPointLabel(pointLabels[key]));
       expect(await screen.findByText("Total: 7.00")).toBeInTheDocument();
       expectFiniteSvgPoints(container);
     }
@@ -106,7 +115,7 @@ describe("CoreVisualization allocation regressions", () => {
     ).toBeInTheDocument();
     expectFiniteSvgPoints(container);
 
-    fireEvent.mouseEnter(screen.getByText("SCRB"));
+    fireEvent.mouseEnter(getSvgPointLabel("SCRB"));
     expect(await screen.findByText("Total: 7.00")).toBeInTheDocument();
     expectFiniteSvgPoints(container);
   });

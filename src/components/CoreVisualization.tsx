@@ -916,7 +916,7 @@ const CoreVisualization = ({
                                  hoveredPoint.type === 'shapley' ? shapleyValues :
                                  hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                                  equalSplitValues;
-                   const values = rawValues.length > 0 ? rawValues : equalSplitValues;
+                   const values = rawValues && rawValues.length > 0 ? rawValues : equalSplitValues;
                   return (
                     <text
                       key={p.id}
@@ -940,7 +940,7 @@ const CoreVisualization = ({
                             hoveredPoint.type === 'shapley' ? shapleyValues :
                             hoveredPoint.type === 'nucleolus' ? nucleolusValues :
                             equalSplitValues;
-                    const values = rawValues.length > 0 ? rawValues : equalSplitValues;
+                    const values = rawValues && rawValues.length > 0 ? rawValues : equalSplitValues;
                     return values.reduce((a, b) => a + b, 0).toFixed(2);
                   })()}
                 </text>
