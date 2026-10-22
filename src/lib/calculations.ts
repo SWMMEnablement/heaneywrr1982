@@ -281,17 +281,23 @@ function calculateNucleolus(
     const epsilonStar = res.point[n];
 
     // Fix every coalition whose excess cannot rise above ε*.
+    // The cap LPs run in the n allocation variables only (no ε column —
+    // a free variable would make every enumerated system singular).
+    const capEqualities: LPConstraint[] = equalities.map(c => ({
+      coeffs: c.coeffs.slice(0, n),
+      rhs: c.rhs,
+    }));
     let fixedAny = false;
     for (const k of unfixed) {
       // max e(S_k) s.t. all other unfixed excesses stay ≥ ε*
       const capIneq: LPConstraint[] = unfixed
         .filter(t => t !== k)
         .map(t => ({
-          coeffs: [...sumCoeffs(subsetIndices[t], n), 0],
+          coeffs: sumCoeffs(subsetIndices[t], n),
           rhs: costs[t] - epsilonStar,
         }));
-      const capObj = [...sumCoeffs(subsetIndices[k], n), 0].map(v => -v); // min x(S_k)
-      const capRes = solveLP(numVars, capObj, "min", capIneq, equalities);
+      const capObj = sumCoeffs(subsetIndices[k], n).map(v => -v); // min x(S_k)
+      const capRes = solveLP(n, capObj, "min", capIneq, capEqualities);
       const maxExcess = capRes.feasible ? costs[k] - capRes.value : epsilonStar;
       if (maxExcess <= epsilonStar + 1e-6) {
         fixedExcess.set(k, epsilonStar);
