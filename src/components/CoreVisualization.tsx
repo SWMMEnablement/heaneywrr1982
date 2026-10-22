@@ -162,6 +162,11 @@ const CoreVisualization = ({
 
   // Equal split point (centroid)
   const centroid = barycentricToCartesian([1/3, 1/3, 1/3]);
+  const equalSplitValues = useMemo(() => {
+    const share = grandCoalitionCost / Math.max(1, participants.length);
+    return participants.map(() => share);
+  }, [participants, grandCoalitionCost]);
+
 
   // Nucleolus comes from the shared calculation engine (exact sequential LP)
   const nucleolusPoint = useMemo(() => {
@@ -905,12 +910,13 @@ const CoreVisualization = ({
                   strokeWidth="1"
                 />
                 {participants.map((p, i) => {
-                   const values = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
+                   const rawValues = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
                                  hoveredPoint.type === 'scrb' ? scrbAllocations :
-                                 hoveredPoint.type === 'mcrs' ? mcrsAllocations :
+                                  hoveredPoint.type === 'mcrs' ? mcrsAllocations :
                                  hoveredPoint.type === 'shapley' ? shapleyValues :
                                  hoveredPoint.type === 'nucleolus' ? nucleolusValues :
-                                 [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3];
+                                 equalSplitValues;
+                   const values = rawValues.length > 0 ? rawValues : equalSplitValues;
                   return (
                     <text
                       key={p.id}
@@ -918,7 +924,7 @@ const CoreVisualization = ({
                       y={hoveredPoint.y - 42 + i * 18}
                       className="text-[11px] fill-foreground font-mono"
                     >
-                      {p.name.length > 10 ? p.name.slice(0, 10) + '…' : p.name}: {values[i].toFixed(2)}
+                      {p.name.length > 10 ? p.name.slice(0, 10) + '…' : p.name}: {(values[i] ?? equalSplitValues[i] ?? 0).toFixed(2)}
                     </text>
                   );
                 })}
@@ -927,13 +933,16 @@ const CoreVisualization = ({
                   y={hoveredPoint.y - 42 + participants.length * 18}
                   className="text-[11px] fill-muted-foreground font-mono"
                 >
-                  Total: {(hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
-                          hoveredPoint.type === 'scrb' ? scrbAllocations :
-                          hoveredPoint.type === 'mcrs' ? mcrsAllocations :
-                          hoveredPoint.type === 'shapley' ? shapleyValues :
-                          hoveredPoint.type === 'nucleolus' ? nucleolusValues :
-                          [grandCoalitionCost / 3, grandCoalitionCost / 3, grandCoalitionCost / 3])
-                          .reduce((a, b) => a + b, 0).toFixed(2)}
+                  Total: {(() => {
+                    const rawValues = hoveredPoint.type === 'custom' && hoveredPoint.values ? hoveredPoint.values :
+                            hoveredPoint.type === 'scrb' ? scrbAllocations :
+                            hoveredPoint.type === 'mcrs' ? mcrsAllocations :
+                            hoveredPoint.type === 'shapley' ? shapleyValues :
+                            hoveredPoint.type === 'nucleolus' ? nucleolusValues :
+                            equalSplitValues;
+                    const values = rawValues.length > 0 ? rawValues : equalSplitValues;
+                    return values.reduce((a, b) => a + b, 0).toFixed(2);
+                  })()}
                 </text>
               </g>
             )}
