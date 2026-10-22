@@ -172,7 +172,7 @@ describe("calculateAllocations", () => {
       });
     });
 
-    it("falls back to equal split for non-3-player games", () => {
+    it("computes the exact nucleolus for two-player games", () => {
       const participants: Participant[] = [
         { id: 1, name: "A", independentCost: 10 },
         { id: 2, name: "B", independentCost: 20 },
@@ -181,8 +181,9 @@ describe("calculateAllocations", () => {
         { participants: [1, 2], cost: 24 },
       ];
       const result = calculateAllocations(participants, coalitions);
-      expect(result.nucleolusValues[0]).toBe(12);
-      expect(result.nucleolusValues[1]).toBe(12);
+      // Savings of 6 are split equally: (10 − 3, 20 − 3)
+      expect(result.nucleolusValues[0]).toBeCloseTo(7, 5);
+      expect(result.nucleolusValues[1]).toBeCloseTo(17, 5);
     });
   });
 
