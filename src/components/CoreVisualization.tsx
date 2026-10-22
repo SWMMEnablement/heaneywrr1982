@@ -333,19 +333,11 @@ const CoreVisualization = ({
     setStoryModeConstraints([]);
   }, []);
 
-  // Check if a constraint is highlighted in story mode
-  const isConstraintHighlighted = useCallback((constraintKey: string) => {
+  // Check if a constraint is highlighted in story mode — exact, id-aware match
+  // (asking for x1 must not also light up x12 and x13)
+  const isConstraintHighlighted = useCallback((line: { storyKey: string }) => {
     if (!isStoryModeActive || storyModeConstraints.length === 0) return true;
-    // Map constraint keys: x₁ -> x1, x₁+x₂ -> x12, etc.
-    const normalizedKey = constraintKey
-      .replace(/₁/g, '1')
-      .replace(/₂/g, '2')
-      .replace(/₃/g, '3')
-      .replace(/\+/g, '');
-    return storyModeConstraints.some(sc => {
-      const normalizedSc = sc.replace(/x/g, '');
-      return normalizedKey.includes(normalizedSc) || normalizedSc === normalizedKey.replace(/x/g, '');
-    });
+    return storyModeConstraints.includes(line.storyKey);
   }, [isStoryModeActive, storyModeConstraints]);
 
   // Handle constraint click
@@ -372,20 +364,21 @@ const CoreVisualization = ({
     const clampedX = Math.max(vertices.B.x, Math.min(vertices.C.x, x));
     const clampedY = Math.max(vertices.A.y, Math.min(vertices.B.y, y));
     
-    const basePoint = draggingPoint === 'scrb' ? scrbPoint : 
+    const basePoint = draggingPoint === 'scrb' ? scrbPoint :
+                      draggingPoint === 'mcrs' ? mcrsPoint :
                       draggingPoint === 'shapley' ? shapleyPoint : nucleolusPoint;
-    
+
     setDragOffsets(prev => ({
       ...prev,
       [draggingPoint]: { x: clampedX - basePoint.x, y: clampedY - basePoint.y }
     }));
-    
+
     // Calculate and show allocation values for dragged position
     const bary = cartesianToBarycentric(clampedX, clampedY);
     const C = grandCoalitionCost;
     const values = [bary[0] * C, bary[1] * C, bary[2] * C];
     setHoveredPoint({ type: 'custom', x: clampedX, y: clampedY, values });
-  }, [draggingPoint, scrbPoint, shapleyPoint, nucleolusPoint, vertices, cartesianToBarycentric, grandCoalitionCost]);
+  }, [draggingPoint, scrbPoint, mcrsPoint, shapleyPoint, nucleolusPoint, cartesianToBarycentric, grandCoalitionCost]);
 
   const handleMouseUp = useCallback(() => {
     setDraggingPoint(null);
@@ -393,8 +386,9 @@ const CoreVisualization = ({
   }, []);
 
   // Get dragged point position
-  const getDraggedPosition = (type: 'scrb' | 'shapley' | 'nucleolus') => {
-    const basePoint = type === 'scrb' ? scrbPoint : 
+  const getDraggedPosition = (type: DraggablePoint) => {
+    const basePoint = type === 'scrb' ? scrbPoint :
+                      type === 'mcrs' ? mcrsPoint :
                       type === 'shapley' ? shapleyPoint : nucleolusPoint;
     const offset = dragOffsets[type];
     return {
@@ -404,7 +398,7 @@ const CoreVisualization = ({
   };
 
   // Check if dragged point is in core
-  const isDraggedPointInCore = (type: 'scrb' | 'shapley' | 'nucleolus') => {
+  const isDraggedPointInCore = (type: DraggablePoint) => {
     const pos = getDraggedPosition(type);
     return isPointInCore(pos.x, pos.y, grandCoalitionCost);
   };
@@ -413,6 +407,7 @@ const CoreVisualization = ({
   const resetDrag = () => {
     setDragOffsets({
       scrb: { x: 0, y: 0 },
+      mcrs: { x: 0, y: 0 },
       shapley: { x: 0, y: 0 },
       nucleolus: { x: 0, y: 0 },
     });
