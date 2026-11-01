@@ -552,7 +552,7 @@ const PaperDetails = () => {
                         <div className="flex-1">
                           <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Allocating Cost Savings in a Three-Level Supply Chain</h5>
                           <p className="text-xs text-muted-foreground mt-1">Leng & Parlar (2009) • Operations Research, 57(1), 200–213</p>
-                          <p className="text-xs text-muted-foreground/80 mt-2">Compares Shapley value, nucleolus and other cooperative solutions for sharing the savings from demand-information sharing among supply-chain partners.</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Uses cooperative game theory to divide the savings from sharing demand information among a supplier, manufacturer and retailer.</p>
                         </div>
                         <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                       </div>
@@ -575,7 +575,7 @@ const PaperDetails = () => {
                         <div className="flex-1">
                           <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Cost Allocation in Collaborative Transportation</h5>
                           <p className="text-xs text-muted-foreground mt-1">Guajardo & Rönnqvist (2016) • International Transactions in Operational Research, 23(3), 371–392</p>
-                          <p className="text-xs text-muted-foreground/80 mt-2">Reviews more than 40 cost-allocation methods — including Shapley, nucleolus and separable-cost rules — used when carriers share joint transport costs.</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Reviews the cost- and benefit-sharing methods, such as the Shapley value and nucleolus, used when transport companies collaborate.</p>
                         </div>
                         <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                       </div>
