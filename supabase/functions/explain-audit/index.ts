@@ -114,6 +114,7 @@ Deno.serve(async (request) => {
       messages: [{ role: "user", content: JSON.stringify(payload) }],
       output: Output.object({ schema }),
       abortSignal: request.signal,
+      maxRetries: 0,
       providerOptions: {
         openai: {
           forceReasoning: true,
