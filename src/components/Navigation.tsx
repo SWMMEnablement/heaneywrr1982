@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, BookOpen, Calculator, Lightbulb, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ThemeToggle from "./ThemeToggle";
 
 interface NavigationProps {
   activeTab: string;
@@ -84,9 +85,12 @@ const Navigation = ({ activeTab, onNavigate }: NavigationProps) => {
                   {item.label}
                 </Button>
               ))}
+              <ThemeToggle className={isScrolled ? "text-foreground hover:bg-muted" : "text-white/90 hover:bg-white/10 hover:text-white"} />
             </div>
 
             {/* Mobile Menu Button */}
+            <div className="flex items-center gap-1 md:hidden">
+            <ThemeToggle className={isScrolled ? "text-foreground" : "text-white"} />
             <Button
               variant="ghost"
               size="icon"
@@ -95,6 +99,7 @@ const Navigation = ({ activeTab, onNavigate }: NavigationProps) => {
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </Button>
+            </div>
           </div>
         </div>
       </motion.nav>
