@@ -25,9 +25,9 @@ const ExecutiveSummary = () => {
           <span className="font-medium">Nucleolus</span>—provides mathematically fair 
           solutions to cost-sharing problems, moving beyond simple equal splits or 
           standalone costs to allocations that are{" "}
-          <em className="text-accent-foreground">stable</em>,{" "}
-          <em className="text-accent-foreground">equitable</em>, and{" "}
-          <em className="text-accent-foreground">justifiable</em>.
+          <em className="text-primary">stable</em>,{" "}
+          <em className="text-primary">equitable</em>, and{" "}
+          <em className="text-primary">justifiable</em>.
         </p>
       </div>
     </motion.div>
