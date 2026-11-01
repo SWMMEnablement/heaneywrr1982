@@ -158,15 +158,27 @@ const PaperDetails = () => {
                   </div>
                   <div className="mt-4 pt-4 border-t border-border/50">
                     <a 
-                      href="https://scholar.google.com/scholar?cites=PAPER_ID" 
+                      href="https://scholar.google.com/scholar?q=%22Methods+for+apportioning+the+cost+of+a+water+resource+project%22" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-interactive/10 text-interactive text-sm font-medium hover:bg-interactive/20 transition-colors"
                     >
                       <GraduationCap className="w-4 h-4" />
-                      106 Citations on Google Scholar
+                      Find citing works on Google Scholar
                       <ExternalLink className="w-3 h-3" />
                     </a>
+                    <a
+                      href="https://doi.org/10.1029/WR018i003p00476"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-colors"
+                    >
+                      DOI 10.1029/WR018i003p00476
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Crossref indexed 40 citing works as of November 2026; Google Scholar counts are usually higher.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -386,7 +398,7 @@ const PaperDetails = () => {
                   <div>
                     <h4 className="font-semibold text-foreground text-sm mb-1">Research Significance</h4>
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      This paper is recognized for its contribution to cost allocation methods, specifically regarding the <strong>Minimum Cost-Remaining Savings (MCRS)</strong> method (also known as the Separable Costs-Remaining Benefits method). The framework continues to inform modern applications in renewable energy allocation, transboundary water management, and infrastructure cost-sharing.
+                      This paper is recognized for its contribution to cost allocation methods, specifically regarding the <strong>Minimum Costs, Remaining Savings (MCRS)</strong> method (eqs. 19–23, pp. 480–481). MCRS is a <em>refinement</em> of the older Separable Costs, Remaining Benefits (SCRB) method (eqs. 3–7, pp. 476–477), not another name for it: SCRB prorates between nominal bounds — separable cost and standalone cost — which can lie outside the core, while MCRS prorates between the exact minimum and maximum each participant can pay inside the core, so its result always satisfies every coalition constraint. The framework continues to inform modern applications in renewable energy allocation, transboundary water management, and infrastructure cost-sharing.
                     </p>
                   </div>
                 </div>
@@ -471,7 +483,7 @@ const PaperDetails = () => {
                 </a>
 
                 <a
-                  href="https://doi.org/10.1007/BF01766485"
+                  href="https://doi.org/10.1137/0117107"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block"
@@ -484,7 +496,7 @@ const PaperDetails = () => {
                         </div>
                         <div className="flex-1">
                           <h5 className="font-medium text-sm text-foreground group-hover:text-primary transition-colors">The Nucleolus of a Characteristic Function Game</h5>
-                          <p className="text-xs text-muted-foreground mt-1">David Schmeidler (1969) • SIAM Journal on Applied Mathematics</p>
+                          <p className="text-xs text-muted-foreground mt-1">David Schmeidler (1969) • SIAM Journal on Applied Mathematics, 17(6), 1163–1170</p>
                           <p className="text-xs text-muted-foreground/80 mt-2">Introduces the nucleolus concept—an allocation that minimizes the maximum dissatisfaction of any coalition.</p>
                         </div>
                         <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
@@ -503,7 +515,7 @@ const PaperDetails = () => {
               </div>
               <div className="space-y-3">
                 <a
-                  href="https://doi.org/10.1016/j.apenergy.2019.113458"
+                  href="https://doi.org/10.1016/j.energy.2024.131033"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block"
@@ -515,9 +527,9 @@ const PaperDetails = () => {
                           <Zap className="w-4 h-4 text-accent" />
                         </div>
                         <div className="flex-1">
-                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Cost Allocation in Energy Communities</h5>
-                          <p className="text-xs text-muted-foreground mt-1">Applied Energy (2019) • Renewable Energy Sharing</p>
-                          <p className="text-xs text-muted-foreground/80 mt-2">Uses Shapley values and nucleolus for fair cost/benefit allocation in renewable energy cooperatives and microgrids.</p>
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Fair Investment Strategies in Large Energy Communities</h5>
+                          <p className="text-xs text-muted-foreground mt-1">Alonso Pedrero, Pisciella & Crespo del Granado (2024) • Energy, 295, 131033</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Uses a scalable Shapley value approach to share the costs and benefits of joint investments among energy-community members.</p>
                         </div>
                         <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                       </div>
@@ -526,7 +538,7 @@ const PaperDetails = () => {
                 </a>
 
                 <a
-                  href="https://doi.org/10.1109/ACCESS.2020.3020119"
+                  href="https://doi.org/10.1287/opre.1080.0528"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block"
@@ -538,9 +550,9 @@ const PaperDetails = () => {
                           <Zap className="w-4 h-4 text-accent" />
                         </div>
                         <div className="flex-1">
-                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Blockchain-Based Cooperative Game Theory</h5>
-                          <p className="text-xs text-muted-foreground mt-1">IEEE Access (2020) • Decentralized Systems</p>
-                          <p className="text-xs text-muted-foreground/80 mt-2">Applies cooperative game theory to blockchain consensus mechanisms and cryptocurrency reward distribution.</p>
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Allocating Cost Savings in a Three-Level Supply Chain</h5>
+                          <p className="text-xs text-muted-foreground mt-1">Leng & Parlar (2009) • Operations Research, 57(1), 200–213</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Compares Shapley value, nucleolus and other cooperative solutions for sharing the savings from demand-information sharing among supply-chain partners.</p>
                         </div>
                         <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                       </div>
@@ -549,7 +561,7 @@ const PaperDetails = () => {
                 </a>
 
                 <a
-                  href="https://doi.org/10.1016/j.ejor.2021.06.025"
+                  href="https://doi.org/10.1111/itor.12205"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block"
@@ -561,9 +573,9 @@ const PaperDetails = () => {
                           <Zap className="w-4 h-4 text-accent" />
                         </div>
                         <div className="flex-1">
-                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Supply Chain Cost Sharing</h5>
-                          <p className="text-xs text-muted-foreground mt-1">European Journal of Operational Research (2021)</p>
-                          <p className="text-xs text-muted-foreground/80 mt-2">Modern logistics and supply chain optimization using cooperative game theory for joint procurement and distribution.</p>
+                          <h5 className="font-medium text-sm text-foreground group-hover:text-accent transition-colors">Cost Allocation in Collaborative Transportation</h5>
+                          <p className="text-xs text-muted-foreground mt-1">Guajardo & Rönnqvist (2016) • International Transactions in Operational Research, 23(3), 371–392</p>
+                          <p className="text-xs text-muted-foreground/80 mt-2">Reviews more than 40 cost-allocation methods — including Shapley, nucleolus and separable-cost rules — used when carriers share joint transport costs.</p>
                         </div>
                         <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-accent transition-colors flex-shrink-0" />
                       </div>
