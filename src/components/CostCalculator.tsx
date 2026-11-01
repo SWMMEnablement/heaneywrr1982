@@ -81,6 +81,7 @@ const CostCalculator = () => {
   // Switch player mode
   const switchPlayerMode = (mode: 3 | 4) => {
     setPlayerMode(mode);
+    setHighlightedCoalition(null);
     if (mode === 3) {
       // Reset to Three Towns scenario
       setParticipants([

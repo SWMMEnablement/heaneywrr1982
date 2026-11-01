@@ -31,6 +31,8 @@ interface CoreVisualizationProps {
   shapleyValues: number[];
   nucleolusValues: number[];
   grandCoalitionCost: number;
+  /** Story key (e.g. "x23") of a coalition boundary to highlight from outside, e.g. the audit table */
+  externalHighlight?: string | null;
 }
 
 // SVG geometry — module constants so memoized callbacks stay stable
@@ -56,6 +58,7 @@ const CoreVisualization = ({
   shapleyValues,
   nucleolusValues,
   grandCoalitionCost,
+  externalHighlight = null,
 }: CoreVisualizationProps) => {
   const [hoveredPoint, setHoveredPoint] = useState<HoveredPoint | null>(null);
   const [clickedConstraint, setClickedConstraint] = useState<ClickedConstraint | null>(null);
@@ -339,6 +342,18 @@ const CoreVisualization = ({
     setStoryModeConstraints([]);
   }, []);
 
+  // Highlight a boundary requested from outside (coalition audit)
+  useEffect(() => {
+    if (externalHighlight) {
+      setIsStoryModeActive(true);
+      setStoryModeConstraints([externalHighlight]);
+      setShowConstraints(true);
+    } else {
+      setIsStoryModeActive(false);
+      setStoryModeConstraints([]);
+    }
+  }, [externalHighlight]);
+
   // Check if a constraint is highlighted in story mode — exact, id-aware match
   // (asking for x1 must not also light up x12 and x13)
   const isConstraintHighlighted = useCallback((line: { storyKey: string }) => {
@@ -417,6 +432,46 @@ const CoreVisualization = ({
       shapley: { x: 0, y: 0 },
       nucleolus: { x: 0, y: 0 },
     });
+  };
+
+  // Keyboard control for draggable points: arrows move, Shift = bigger steps, Escape/Home resets
+  const pointLabels: Record<DraggablePoint, string> = { scrb: 'SCRB', mcrs: 'MCRS', shapley: 'Shapley', nucleolus: 'Nucleolus' };
+  const nudgePoint = (type: DraggablePoint, dx: number, dy: number) => {
+    const base = type === 'scrb' ? scrbPoint : type === 'mcrs' ? mcrsPoint : type === 'shapley' ? shapleyPoint : nucleolusPoint;
+    const cur = getDraggedPosition(type);
+    const nx = Math.max(vertices.B.x, Math.min(vertices.C.x, cur.x + dx));
+    const ny = Math.max(vertices.A.y, Math.min(vertices.B.y, cur.y + dy));
+    setDragOffsets(prev => ({ ...prev, [type]: { x: nx - base.x, y: ny - base.y } }));
+    const bary = cartesianToBarycentric(nx, ny);
+    const C = grandCoalitionCost;
+    setHoveredPoint({ type: 'custom', x: nx, y: ny, values: [bary[0] * C, bary[1] * C, bary[2] * C] });
+  };
+  const keyboardProps = (type: DraggablePoint) => {
+    const pos = getDraggedPosition(type);
+    const bary = cartesianToBarycentric(pos.x, pos.y);
+    const vals = bary.map(b => (b * grandCoalitionCost).toFixed(2)).join(', ');
+    return {
+      tabIndex: 0,
+      role: 'button' as const,
+      'aria-label': `${pointLabels[type]} allocation (${vals}), ${isDraggedPointInCore(type) ? 'inside' : 'outside'} the core. Use arrow keys to move, Escape to reset.`,
+      onFocus: () => setHoveredPoint({ type, x: pos.x, y: pos.y }),
+      onBlur: () => setHoveredPoint(null),
+      onKeyDown: (e: React.KeyboardEvent) => {
+        const step = e.shiftKey ? 10 : 3;
+        const moves: Record<string, [number, number]> = {
+          ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step],
+        };
+        if (moves[e.key]) {
+          e.preventDefault();
+          nudgePoint(type, ...moves[e.key]);
+        } else if (e.key === 'Escape' || e.key === 'Home') {
+          e.preventDefault();
+          setDragOffsets(prev => ({ ...prev, [type]: { x: 0, y: 0 } }));
+          setHoveredPoint(null);
+        }
+      },
+      className: 'focus:outline-none focus-visible:[&>circle]:stroke-[hsl(var(--ring))] focus-visible:[&>circle]:[stroke-width:4]',
+    };
   };
 
   const hasDragOffsets = Object.values(dragOffsets).some(o => o.x !== 0 || o.y !== 0);
@@ -716,6 +771,7 @@ const CoreVisualization = ({
               transition={{ delay: 0.7, type: "spring" }}
               style={{ cursor: draggingPoint === 'scrb' ? 'grabbing' : 'grab' }}
               onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('scrb'); }}
+              {...keyboardProps('scrb')}
               onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'scrb', x: getDraggedPosition('scrb').x, y: getDraggedPosition('scrb').y })}
               onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
@@ -757,6 +813,7 @@ const CoreVisualization = ({
               transition={{ delay: 0.75, type: "spring" }}
               style={{ cursor: draggingPoint === 'mcrs' ? 'grabbing' : 'grab' }}
               onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('mcrs'); }}
+              {...keyboardProps('mcrs')}
               onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'mcrs', x: getDraggedPosition('mcrs').x, y: getDraggedPosition('mcrs').y })}
               onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
@@ -797,6 +854,7 @@ const CoreVisualization = ({
               transition={{ delay: 0.8, type: "spring" }}
               style={{ cursor: draggingPoint === 'shapley' ? 'grabbing' : 'grab' }}
               onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('shapley'); }}
+              {...keyboardProps('shapley')}
               onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'shapley', x: getDraggedPosition('shapley').x, y: getDraggedPosition('shapley').y })}
               onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
@@ -837,6 +895,7 @@ const CoreVisualization = ({
               transition={{ delay: 0.9, type: "spring" }}
               style={{ cursor: draggingPoint === 'nucleolus' ? 'grabbing' : 'grab' }}
               onMouseDown={(e) => { e.preventDefault(); setDraggingPoint('nucleolus'); }}
+              {...keyboardProps('nucleolus')}
               onMouseEnter={() => !draggingPoint && setHoveredPoint({ type: 'nucleolus', x: getDraggedPosition('nucleolus').x, y: getDraggedPosition('nucleolus').y })}
               onMouseLeave={() => !draggingPoint && setHoveredPoint(null)}
             >
