@@ -121,7 +121,7 @@ const CoalitionAudit = ({
                         : `${audit.individualViolations.length} (${audit.individualViolations.map(v => v.label).join(", ")})`}
                     </td>
                     <td className="py-2 px-2">
-                      {audit.worst ? (
+                      {audit.worst ? (<>
                         <button
                           type="button"
                           onClick={() => toggle(audit.worst!.key)}
@@ -141,7 +141,7 @@ const CoalitionAudit = ({
                             {explanations[`${method.key}:${audit.worst.key}`]}
                           </p>
                         )}
-                      ) : (
+                      </>) : (
                         <span className="text-muted-foreground">None</span>
                       )}
                     </td>
