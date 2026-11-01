@@ -72,6 +72,9 @@
     --sidebar-border: 220 20% 88%;
     --sidebar-ring: 222 60% 28%;
 
+    --footer: 222 60% 28%;
+    --footer-foreground: 210 40% 98%;
+
     /* Chart palette */
     --chart-1: 222 60% 38%;
     --chart-2: 186 55% 42%;
@@ -123,6 +126,9 @@
     --sidebar-accent-foreground: 210 40% 98%;
     --sidebar-border: 222 25% 22%;
     --sidebar-ring: 210 60% 65%;
+
+    --footer: 222 35% 11%;
+    --footer-foreground: 210 40% 96%;
 
     --chart-1: 210 65% 65%;
     --chart-2: 186 55% 55%;

@@ -49,6 +49,10 @@ export default {
           DEFAULT: "hsl(var(--interactive))",
           foreground: "hsl(var(--interactive-foreground))",
         },
+        footer: {
+          DEFAULT: "hsl(var(--footer))",
+          foreground: "hsl(var(--footer-foreground))",
+        },
         mcrs: {
           DEFAULT: "hsl(var(--mcrs))",
           foreground: "hsl(var(--mcrs-foreground))",
