@@ -41,7 +41,17 @@ Rules:
 - Use ONLY numbers that appear in the input, written with two decimals exactly as given. Never compute new totals, never propose different allocations, never say what the method "should" charge.
 - Name the participants. Avoid jargon such as "core", "imputation" or "x(S)"; say "together they are charged" and "on their own they could build it for".
 - For a single participant, contrast what they are charged with their standalone cost.
+- Write natural, grammatical sentences with the participants as the subject, e.g. "Purpose 1 and Purpose 2 are charged 6.00 together, but could build their own project for 5.00, so they would be better off leaving."
 - Return exactly one entry per failure id, in the same order.`;
+
+/** Every number quoted in an explanation must be one of that failure's own figures. */
+function isGrounded(text: string, f: Failure): boolean {
+  const allowed = new Set(
+    [f.paid, f.coalitionCost, f.overcharge, ...f.members.flatMap(m => [m.pays, m.standaloneCost])].map(v => v.toFixed(2)),
+  );
+  const quoted = text.match(/\d+\.\d+/g) ?? [];
+  return quoted.every(q => allowed.has(Number(q).toFixed(2)));
+}
 
 const schema = jsonSchema<{ explanations: { id: string; text: string }[] }>({
   type: "object",
@@ -126,8 +136,11 @@ Deno.serve(async (request) => {
       },
     });
     const output = await result.output;
-    const allowed = new Set(payload.failures.map(f => f.id));
-    const explanations = (output?.explanations ?? []).filter(e => allowed.has(e.id) && e.text.trim());
+    const byId = new Map(payload.failures.map(f => [f.id, f]));
+    const explanations = (output?.explanations ?? []).filter(e => {
+      const f = byId.get(e.id);
+      return f && e.text.trim() && isGrounded(e.text, f);
+    });
     if (explanations.length === 0) {
       return json({ error: "Lovable AI returned no explanation. Try again later." }, 502, runHeaders());
     }

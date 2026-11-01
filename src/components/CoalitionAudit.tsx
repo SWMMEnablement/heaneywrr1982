@@ -38,6 +38,10 @@ const CoalitionAudit = ({
   diagramCanHighlight,
 }: CoalitionAuditProps) => {
   const [showAll, setShowAll] = useState(participants.length > 3);
+  // Four-player games open the full constraint list, since the 3D view can't show the core boundaries
+  useEffect(() => {
+    setShowAll(participants.length > 3);
+  }, [participants.length]);
 
   const audits = useMemo(
     () => methods.map(m => ({ method: m, audit: auditAllocation(participants, coalitions, m.values) })),
