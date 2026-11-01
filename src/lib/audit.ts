@@ -86,7 +86,15 @@ export function auditAllocation(
       overcharge: paid - cost,
     });
   }
-  checks.sort((a, b) => a.ids.length - b.ids.length);
+  checks.sort((a, b) => {
+    if (a.ids.length !== b.ids.length) return a.ids.length - b.ids.length;
+    for (let i = 0; i < a.ids.length; i++) {
+      const pa = participants.findIndex(p => p.id === a.ids[i]);
+      const pb = participants.findIndex(p => p.id === b.ids[i]);
+      if (pa !== pb) return pa - pb;
+    }
+    return 0;
+  });
 
   const violating = checks.filter(c => c.overcharge > EPS);
   const worst = violating.reduce<CoalitionCheck | null>(

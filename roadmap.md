@@ -8,4 +8,6 @@
 - [x] Accessibility: input labels, keyboard control for draggable points
 - [x] Scenario export/import (JSON)
 - [x] Coalition audit table (totals, individual violations, worst overcharge, click highlights diagram)
+- [x] AI plain-language explanations beside failed audit constraints (number-grounded, no recalculation)
+- [x] Export/Import verified in preview; 4-player audit inspected and fixed (list auto-opens, constraint order, floating label overlap)
 - [ ] Publish — waits on user's go-ahead

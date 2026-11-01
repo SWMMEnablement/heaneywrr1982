@@ -100,7 +100,7 @@ const ScrollProgressTracker = () => {
                 <div
                   className={`absolute right-6 whitespace-nowrap px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 ${
                     isActive
-                      ? "opacity-100 bg-interactive text-interactive-foreground"
+                      ? "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 2xl:opacity-100 bg-interactive text-interactive-foreground"
                       : "opacity-0 group-hover:opacity-100 bg-card text-foreground border border-border shadow-sm"
                   }`}
                 >

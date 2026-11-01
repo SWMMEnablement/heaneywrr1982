@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { ShieldCheck, ShieldAlert, ChevronDown, ChevronUp } from "lucide-react";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { ShieldCheck, ShieldAlert, ChevronDown, ChevronUp, Sparkles, Loader2 } from "lucide-react";
+import { collectFailures, requestExplanations } from "@/lib/explain-audit";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { auditAllocation } from "@/lib/audit";
@@ -37,12 +38,44 @@ const CoalitionAudit = ({
   diagramCanHighlight,
 }: CoalitionAuditProps) => {
   const [showAll, setShowAll] = useState(participants.length > 3);
+  // Four-player games open the full constraint list, since the 3D view can't show the core boundaries
+  useEffect(() => {
+    setShowAll(participants.length > 3);
+  }, [participants.length]);
 
   const audits = useMemo(
     () => methods.map(m => ({ method: m, audit: auditAllocation(participants, coalitions, m.values) })),
     [methods, participants, coalitions]
   );
   const checks = audits[0]?.audit.checks ?? [];
+
+  // Plain-language explanations (Lovable AI) for the failures computed above.
+  // They describe the existing numbers only; allocations are never changed.
+  const MAX_EXPLAIN = 40;
+  const failures = useMemo(() => collectFailures(participants, audits), [participants, audits]);
+  const failureSignature = useMemo(() => JSON.stringify(failures), [failures]);
+  const [explanations, setExplanations] = useState<Record<string, string>>({});
+  const [explaining, setExplaining] = useState(false);
+  const [explainError, setExplainError] = useState<string | null>(null);
+  useEffect(() => {
+    setExplanations({});
+    setExplainError(null);
+  }, [failureSignature]);
+
+  const explain = async () => {
+    setExplaining(true);
+    setExplainError(null);
+    try {
+      const result = await requestExplanations(participants, coalitions, grandCoalitionCost, failures.slice(0, MAX_EXPLAIN));
+      setExplanations(result);
+      setShowAll(true);
+    } catch (e) {
+      setExplainError((e as Error).message);
+    } finally {
+      setExplaining(false);
+    }
+  };
+  const hasExplanations = Object.keys(explanations).length > 0;
 
   const toggle = (key: string) => onHighlight(highlightedKey === key ? null : key);
 
@@ -92,7 +125,7 @@ const CoalitionAudit = ({
                         : `${audit.individualViolations.length} (${audit.individualViolations.map(v => v.label).join(", ")})`}
                     </td>
                     <td className="py-2 px-2">
-                      {audit.worst ? (
+                      {audit.worst ? (<>
                         <button
                           type="button"
                           onClick={() => toggle(audit.worst!.key)}
@@ -107,7 +140,12 @@ const CoalitionAudit = ({
                             pays {fmt(audit.worst.paid)} &gt; c(S) {fmt(audit.worst.cost)}
                           </span>
                         </button>
-                      ) : (
+                        {explanations[`${method.key}:${audit.worst.key}`] && (
+                          <p className="mt-1 text-[11px] text-foreground/80 max-w-xs">
+                            {explanations[`${method.key}:${audit.worst.key}`]}
+                          </p>
+                        )}
+                      </>) : (
                         <span className="text-muted-foreground">None</span>
                       )}
                     </td>
@@ -130,10 +168,27 @@ const CoalitionAudit = ({
         </div>
 
         <div>
-          <Button variant="outline" size="sm" onClick={() => setShowAll(s => !s)} aria-expanded={showAll} className="gap-2">
-            {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            {showAll ? "Hide" : "Show"} all {checks.length} coalition constraints
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowAll(s => !s)} aria-expanded={showAll} className="gap-2">
+              {showAll ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showAll ? "Hide" : "Show"} all {checks.length} coalition constraints
+            </Button>
+            {failures.length > 0 && (
+              <Button size="sm" onClick={explain} disabled={explaining || hasExplanations} className="gap-2">
+                {explaining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                {explaining ? "Explaining…" : hasExplanations ? "Failures explained" : `Explain ${failures.length} failure${failures.length > 1 ? "s" : ""} in plain language`}
+              </Button>
+            )}
+          </div>
+          {failures.length > 0 && (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Explanations are written by Lovable AI from the numbers shown here; the allocations themselves are not changed.
+              {failures.length > MAX_EXPLAIN && ` Only the first ${MAX_EXPLAIN} failures are explained.`}
+            </p>
+          )}
+          {explainError && (
+            <p role="alert" className="mt-2 text-xs text-destructive">{explainError}</p>
+          )}
           {showAll && (
             <div className="overflow-x-auto mt-4">
               <table className="w-full text-xs">
@@ -148,9 +203,12 @@ const CoalitionAudit = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {checks.map((check, row) => (
+                  {checks.map((check, row) => {
+                    const rowExplanations = audits
+                      .map(({ method }) => ({ method, text: explanations[`${method.key}:${check.key}`] }))
+                      .filter(e => e.text);
+                    return (<Fragment key={check.key}>
                     <tr
-                      key={check.key}
                       className={cn("border-b border-muted", highlightedKey === check.key && "bg-accent/10")}
                     >
                       <th scope="row" className="py-1.5 px-2 text-left font-normal">
@@ -179,7 +237,21 @@ const CoalitionAudit = ({
                         );
                       })}
                     </tr>
-                  ))}
+                    {rowExplanations.length > 0 && (
+                      <tr className={cn("border-b border-muted", highlightedKey === check.key && "bg-accent/10")}>
+                        <td colSpan={methods.length + 2} className="pb-2 px-2">
+                          <ul className="space-y-1 pl-4 border-l-2 border-destructive/40">
+                            {rowExplanations.map(({ method, text }) => (
+                              <li key={method.key} className="text-xs text-foreground/80">
+                                <span className={cn("font-medium", method.colorClass)}>{method.label}:</span> {text}
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                      </tr>
+                    )}
+                    </Fragment>);
+                  })}
                 </tbody>
               </table>
             </div>
