@@ -85,12 +85,12 @@ const Navigation = ({ activeTab, onNavigate }: NavigationProps) => {
                   {item.label}
                 </Button>
               ))}
-              <ThemeToggle className={isScrolled ? "text-foreground hover:bg-muted" : "text-white/90 hover:bg-white/10 hover:text-white"} />
+              <ThemeToggle className={isScrolled ? "text-foreground hover:bg-muted hover:text-foreground" : "text-white/90 hover:bg-white/10 hover:text-white"} />
             </div>
 
             {/* Mobile Menu Button */}
             <div className="flex items-center gap-1 md:hidden">
-            <ThemeToggle className={isScrolled ? "text-foreground" : "text-white"} />
+            <ThemeToggle className={isScrolled ? "text-foreground hover:text-foreground" : "text-white"} />
             <Button
               variant="ghost"
               size="icon"
