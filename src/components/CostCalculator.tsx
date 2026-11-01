@@ -1,8 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal, Users2, AlertTriangle } from "lucide-react";
+import { Calculator, Users, Coins, TrendingDown, RotateCcw, Info, BarChart3, Layers, LayoutGrid, PieChart as PieChartIcon, Radar as RadarIcon, GitCompare, HelpCircle, BookOpen, SlidersHorizontal, Users2, AlertTriangle, Download, Upload } from "lucide-react";
 import { calculateAllocations, type Participant, type CoalitionCost } from "@/lib/calculations";
-import { checkSubadditivity, type SubadditivityViolation } from "@/lib/validation";
+import { checkSubadditivity } from "@/lib/validation";
+import { validateGameInputs } from "@/lib/audit";
+import { serializeScenario, parseScenario } from "@/lib/scenario-io";
+import CoalitionAudit from "./CoalitionAudit";
+import { useToast } from "@/hooks/use-toast";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -46,10 +51,37 @@ const CostCalculator = () => {
   const [showTour, setShowTour] = useState(false);
   const [showExamples, setShowExamples] = useState(false);
   const [showFirstTime, setShowFirstTime] = useState(false);
+  const [highlightedCoalition, setHighlightedCoalition] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const exportScenario = () => {
+    const blob = new Blob([serializeScenario({ playerMode, participants, coalitions })], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cost-allocation-${playerMode}-player-scenario.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const importScenario = async (file: File) => {
+    try {
+      const s = parseScenario(await file.text());
+      setPlayerMode(s.playerMode);
+      setParticipants(s.participants);
+      setCoalitions(s.coalitions);
+      setHighlightedCoalition(null);
+      toast({ title: "Scenario loaded", description: file.name });
+    } catch (e) {
+      toast({ title: "Couldn't load that file", description: (e as Error).message, variant: "destructive" });
+    }
+  };
 
   // Switch player mode
   const switchPlayerMode = (mode: 3 | 4) => {
     setPlayerMode(mode);
+    setHighlightedCoalition(null);
     if (mode === 3) {
       // Reset to Three Towns scenario
       setParticipants([
@@ -118,7 +150,7 @@ const CostCalculator = () => {
 
   const updateParticipant = (id: number, field: keyof Participant, value: string | number) => {
     setParticipants(prev => 
-      prev.map(p => p.id === id ? { ...p, [field]: field === 'independentCost' ? Number(value) : value } : p)
+      prev.map(p => p.id === id ? { ...p, [field]: field === 'independentCost' ? (value === '' ? NaN : Number(value)) : value } : p)
     );
   };
 
@@ -133,18 +165,27 @@ const CostCalculator = () => {
     switchPlayerMode(playerMode);
   };
 
-  // Calculate cost allocations using extracted pure functions
-  const calculations = useMemo(() => calculateAllocations(participants, coalitions), [participants, coalitions]);
+  // Validate inputs first; results are suppressed while any cost is invalid
+  const inputIssues = useMemo(() => validateGameInputs(participants, coalitions), [participants, coalitions]);
+  const calculations = useMemo(
+    () => (inputIssues.length === 0 ? calculateAllocations(participants, coalitions) : null),
+    [participants, coalitions, inputIssues]
+  );
+  const issueFields = useMemo(() => new Set(inputIssues.map(i => i.field)), [inputIssues]);
+  const showNumber = (v: number) => (Number.isFinite(v) ? v : '');
 
   // Check subadditivity violations
-  const subadditivityViolations = useMemo(() => checkSubadditivity(participants, coalitions), [participants, coalitions]);
+  const subadditivityViolations = useMemo(
+    () => (inputIssues.length === 0 ? checkSubadditivity(participants, coalitions) : []),
+    [participants, coalitions, inputIssues]
+  );
 
   // Slider ceiling follows the data (at least 20, otherwise 1.5x the largest cost)
   const sliderMax = useMemo(() => {
     const maxCost = Math.max(
       20,
-      ...participants.map(p => p.independentCost),
-      ...coalitions.map(c => c.cost)
+      ...participants.map(p => p.independentCost).filter(Number.isFinite),
+      ...coalitions.map(c => c.cost).filter(Number.isFinite)
     );
     return Math.ceil(maxCost * 1.5);
   }, [participants, coalitions]);
@@ -266,10 +307,32 @@ const CostCalculator = () => {
                     Define costs for individual participants and coalitions
                   </CardDescription>
                 </div>
-                <Button variant="outline" size="sm" onClick={resetToDefault}>
-                  <RotateCcw className="w-4 h-4 mr-2" />
-                  Reset
-                </Button>
+                <div className="flex flex-wrap gap-2 justify-end">
+                  <Button variant="outline" size="sm" onClick={exportScenario} disabled={inputIssues.length > 0} aria-label="Export scenario as a JSON file">
+                    <Download className="w-4 h-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} aria-label="Import scenario from a JSON file">
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import
+                  </Button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="application/json,.json"
+                    className="hidden"
+                    data-testid="scenario-file-input"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) importScenario(f);
+                      e.target.value = '';
+                    }}
+                  />
+                  <Button variant="outline" size="sm" onClick={resetToDefault}>
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Reset
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Individual Costs */}
@@ -291,6 +354,7 @@ const CostCalculator = () => {
                         <div className="flex items-center gap-3">
                           <Input
                             value={p.name}
+                            aria-label={`Name of participant ${p.id}`}
                             onChange={(e) => updateParticipant(p.id, 'name', e.target.value)}
                             className="flex-1"
                           />
@@ -298,16 +362,21 @@ const CostCalculator = () => {
                             <span className="text-sm text-muted-foreground">c({p.id}) =</span>
                             <Input
                               type="number"
-                              value={p.independentCost}
+                              min={0}
+                              step="any"
+                              value={showNumber(p.independentCost)}
+                              aria-label={`Standalone cost c(${p.id}) for ${p.name || `participant ${p.id}`}`}
+                              aria-invalid={!Number.isFinite(p.independentCost) || p.independentCost < 0}
                               onChange={(e) => updateParticipant(p.id, 'independentCost', e.target.value)}
-                              className="w-20"
+                              className="w-20 aria-[invalid=true]:border-destructive"
                             />
                           </div>
                         </div>
                         <div className="flex items-center gap-3 pl-2">
                           <SlidersHorizontal className="w-3 h-3 text-muted-foreground shrink-0" />
                           <Slider
-                            value={[p.independentCost]}
+                            value={[Number.isFinite(p.independentCost) ? Math.max(0, p.independentCost) : 0]}
+                            aria-label={`Standalone cost slider for ${p.name || `participant ${p.id}`}`}
                             onValueChange={(value) => updateParticipant(p.id, 'independentCost', value[0])}
                             min={0}
                             max={sliderMax}
@@ -342,14 +411,30 @@ const CostCalculator = () => {
                         </span>
                         <Input
                           type="number"
-                          value={c.cost}
-                          onChange={(e) => updateCoalition(i, Number(e.target.value))}
-                          className="w-20"
+                          min={0}
+                          step="any"
+                          value={showNumber(c.cost)}
+                          aria-label={`Coalition cost c(${c.participants.join('')}) for ${c.participants.map(id => participants.find(p => p.id === id)?.name ?? id).join(', ')}`}
+                          aria-invalid={issueFields.has(`c(${c.participants.join('')})`)}
+                          onChange={(e) => updateCoalition(i, e.target.value === '' ? NaN : Number(e.target.value))}
+                          className="w-20 aria-[invalid=true]:border-destructive"
                         />
                       </div>
                     ))}
                   </div>
                 </div>
+
+                {/* Input validation errors */}
+                {inputIssues.length > 0 && (
+                  <div role="alert" className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs">
+                    <p className="font-medium text-destructive mb-1 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4" aria-hidden /> Fix these inputs to see results
+                    </p>
+                    <ul className="list-disc pl-5 text-muted-foreground space-y-0.5">
+                      {inputIssues.map((issue, i) => <li key={i}>{issue.message}</li>)}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Subadditivity Warning */}
                 <AnimatePresence>
@@ -405,6 +490,15 @@ const CostCalculator = () => {
                   Comparing all five allocation methods side by side
                 </CardDescription>
               </CardHeader>
+              {!calculations ? (
+                <CardContent>
+                  <div className="h-full min-h-[200px] flex flex-col items-center justify-center text-center gap-2 text-muted-foreground" data-testid="results-suppressed">
+                    <AlertTriangle className="w-8 h-8 text-destructive" aria-hidden />
+                    <p className="font-medium text-foreground">Results hidden</p>
+                    <p className="text-sm max-w-xs">Costs must be non-negative numbers. Correct the highlighted inputs and every method will recalculate.</p>
+                  </div>
+                </CardContent>
+              ) : (
               <CardContent className="space-y-6">
                 {/* Savings Summary */}
                 <div className="p-4 rounded-lg bg-gradient-to-r from-interactive/10 to-accent/10 border border-interactive/20">
@@ -521,13 +615,15 @@ const CostCalculator = () => {
                     <div>
                       <span className="font-medium text-primary">SCRB</span>
                       <p>Separable costs + proportional remaining benefits share</p>
+                      <p className="font-mono text-[10px] opacity-80">eqs. 3–7, pp. 476–477</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-mcrs/5">
                     <div className="w-2 h-2 rounded-full bg-mcrs mt-1 shrink-0" />
                     <div>
                       <span className="font-medium text-mcrs">MCRS</span>
-                      <p>Minimum costs + proportional remaining savings (paper's main contribution)</p>
+                      <p>Refines SCRB: prorates between exact core bounds (paper's main contribution)</p>
+                      <p className="font-mono text-[10px] opacity-80">eqs. 19–23, pp. 480–481</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-interactive/5">
@@ -535,6 +631,7 @@ const CostCalculator = () => {
                     <div>
                       <span className="font-medium text-interactive">Shapley</span>
                       <p>Average marginal contribution across all orderings</p>
+                      <p className="font-mono text-[10px] opacity-80">eqs. 14–15, p. 478</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-accent/5">
@@ -542,6 +639,7 @@ const CostCalculator = () => {
                     <div>
                       <span className="font-medium text-accent">Nucleolus</span>
                       <p>Minimizes maximum coalition dissatisfaction (exact LP)</p>
+                      <p className="font-mono text-[10px] opacity-80">eqs. 16–17, p. 478</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
@@ -552,11 +650,19 @@ const CostCalculator = () => {
                     </div>
                   </div>
                 </div>
+                {calculations.coreEmpty && (
+                  <p className="text-xs p-2 rounded-lg bg-muted/50 text-muted-foreground" role="status">
+                    <strong className="text-foreground">The core is empty</strong> — no allocation satisfies every coalition. MCRS relaxes intermediate
+                    coalition costs by θ = {calculations.coreRelaxationTheta.toFixed(4)} (eq. 19, p. 480) to find the least-relaxed stable region.
+                  </p>
+                )}
               </CardContent>
+              )}
             </Card>
           </motion.div>
         </div>
 
+        {calculations && (<>
         {/* Show Steps Panel - How calculations work */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -929,6 +1035,7 @@ const CostCalculator = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4 }}
           className="mt-8"
+          id="core-diagram"
         >
           {playerMode === 3 ? (
             <CoreVisualization
@@ -939,6 +1046,7 @@ const CostCalculator = () => {
               shapleyValues={calculations.shapleyValues}
               nucleolusValues={calculations.nucleolusValues}
               grandCoalitionCost={calculations.grandCoalitionCost}
+              externalHighlight={highlightedCoalition}
             />
           ) : (
             <Suspense fallback={
@@ -959,6 +1067,30 @@ const CostCalculator = () => {
           )}
         </motion.div>
 
+        {/* Coalition Audit */}
+        <div className="mt-8">
+          <CoalitionAudit
+            participants={participants}
+            coalitions={coalitions}
+            grandCoalitionCost={calculations.grandCoalitionCost}
+            highlightedKey={highlightedCoalition}
+            diagramCanHighlight={playerMode === 3}
+            onHighlight={(key) => {
+              setHighlightedCoalition(key);
+              if (key && playerMode === 3) {
+                document.getElementById('core-diagram')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+              }
+            }}
+            methods={[
+              { key: 'scrb', label: 'SCRB', colorClass: 'text-primary', values: calculations.scrbAllocations },
+              { key: 'mcrs', label: 'MCRS', colorClass: 'text-mcrs', values: calculations.mcrsAllocations },
+              { key: 'shapley', label: 'Shapley', colorClass: 'text-interactive', values: calculations.shapleyValues },
+              { key: 'nucleolus', label: 'Nucleolus', colorClass: 'text-accent', values: calculations.nucleolusValues },
+              { key: 'equal', label: 'Equal Split', colorClass: 'text-muted-foreground', values: calculations.equalSplit },
+            ]}
+          />
+        </div>
+
         {/* Active Learning Challenges */}
         {playerMode === 3 && (
           <motion.div
@@ -977,6 +1109,7 @@ const CostCalculator = () => {
             />
           </motion.div>
         )}
+        </>)}
       </div>
     </section>
   );
