@@ -53,6 +53,12 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
+                <a href="/cost-allocation-explorer.md" target="_blank" rel="noopener noreferrer" className="text-footer-foreground/80 hover:text-footer-foreground transition-colors inline-flex items-center gap-1">
+                  Technical summary (.md)
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
+              <li>
                 <a 
                   href="https://en.wikipedia.org/wiki/Cooperative_game_theory" 
                   target="_blank" 

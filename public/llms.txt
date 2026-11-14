@@ -1,0 +1,7 @@
+# Cost Allocation Game Theory Explorer
+
+> Interactive teaching app for cooperative cost allocation (SCRB, MCRS, Shapley, Nucleolus) based on Heaney and Dickinson (1982).
+
+## Apps
+
+- [Cost Allocation Explorer](/cost-allocation-explorer.md): technical summary, methods, checks and limits.
