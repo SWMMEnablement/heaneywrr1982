@@ -5,3 +5,4 @@
 - `src/lib/deployment-check.test.ts` and `src/components/CostCalculator.test.tsx` pin the default-scenario results; run them before publishing — they catch an outdated calculation engine.
 - Every external research link must be verified against Crossref (title + journal) before it is added — earlier DOIs pointed at unrelated papers.
 - AI explanations of audit failures run in the `explain-audit` edge function; it only receives already-computed figures and drops any explanation quoting a number not in its own failure, so AI text can never alter or invent results.
+- The technical summary in public/cost-allocation-explorer.md is the single source; vite.config.ts embeds it into index.html as #app-md so the page carries its own copy.

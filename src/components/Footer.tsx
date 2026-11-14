@@ -1,6 +1,22 @@
 import { BookOpen, ExternalLink, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const SUMMARY_URL = "/cost-allocation-explorer.md";
+
+// Opens the sidecar .md; falls back to the copy embedded in index.html.
+const openSummary = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+  e.preventDefault();
+  const win = window.open("", "_blank");
+  let text: string | null = null;
+  try {
+    const res = await fetch(SUMMARY_URL);
+    if (res.ok && !(res.headers.get("content-type") || "").includes("text/html")) text = await res.text();
+  } catch { /* use embedded copy */ }
+  if (!text) text = document.getElementById("app-md")?.textContent?.trim() || "Technical summary unavailable.";
+  const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+  if (win) win.location.href = url; else window.location.href = url;
+};
+
 const Footer = () => {
   const handleRestartTutorial = () => {
     localStorage.removeItem('hasSeenFirstTimeExperience');
@@ -53,9 +69,14 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2 text-sm">
               <li>
-                <a href="/cost-allocation-explorer.md" target="_blank" rel="noopener noreferrer" className="text-footer-foreground/80 hover:text-footer-foreground transition-colors inline-flex items-center gap-1">
-                  Technical summary (.md)
+                <a href={SUMMARY_URL} onClick={openSummary} target="_blank" rel="noopener noreferrer" className="text-footer-foreground/80 hover:text-footer-foreground transition-colors inline-flex items-center gap-1">
+                  Technical summary
                   <ExternalLink className="w-3 h-3" />
+                </a>
+              </li>
+              <li>
+                <a href={SUMMARY_URL} download="cost-allocation-explorer.md" className="text-footer-foreground/80 hover:text-footer-foreground transition-colors inline-flex items-center gap-1">
+                  Download summary (.md)
                 </a>
               </li>
               <li>
